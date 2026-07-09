@@ -5,7 +5,7 @@
       "id": "netflix",
       "regions": {
         "tr": { "url": "https://help.netflix.com/tr/node/24926", "locale": "tr-TR", "expectedCurrency": "TRY", "enabled": false, "_note": "geo-IP: help-center içeriği IP'den seçiliyor, US runner TR fiyatı GÖREMEZ (2026-07-09 koşusunda doğrulandı) — TR proxy/self-hosted runner kararına kadar kapalı", "robotsCheckedAt": "2026-07-09" },
-        "us": { "url": "https://help.netflix.com/en/node/24926", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "body", "pattern": "Standard:?\\s*(\\$[\\d.,]+|[\\d.,]+\\s*USD)" }, "robotsCheckedAt": "2026-07-09", "_note": "US içerik TR IP'den görülemedi; pattern hem '\\$17.99' hem '17.99 USD' biçimini kabul eder — ilk koşuda izle" }
+        "us": { "url": "https://help.netflix.com/en/node/24926", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "body", "pattern": "Standard with ads:?\\s*(\\$[\\d.,]+|[\\d.,]+\\s*USD)" }, "robotsCheckedAt": "2026-07-09", "_note": "TEMEL plan = Standard with ads (katalog semantiği; PR #3'te 'Standard' \\$19.99 yanlış plana kaydı)" }
       }
     },
     {

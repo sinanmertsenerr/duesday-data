@@ -93,6 +93,35 @@ test('promo kart önde olsa bile sıradaki temiz element kazanır (storytel vaka
   assert.equal(price, 32999);
 });
 
+test('kampanya rozeti KARDEŞ elementteyse ebeveyn bağlamı yakalar (storytel PR #3 vakası)', () => {
+  // Promo kartında fiyat elementi tek başına "₺164,99/ay" — "İLK 4 AY"
+  // rozeti kardeş elementte. Sıradaki temiz kart kazanmalı.
+  const html =
+    '<html><body>' +
+    '<div class="card"><span class="badge">İLK 4 AY</span><span class="defaultPrice">₺164,99/ay</span></div>' +
+    '<div class="card"><span class="title">Sınırsız</span><span class="defaultPrice">₺329.99</span></div>' +
+    '</body></html>';
+  const price = extractFromCss(
+    html,
+    { selector: '[class*=defaultPrice]', pattern: '(₺[\\d.,]+)' },
+    'en-US',
+    'TRY',
+  );
+  assert.equal(price, 32999);
+});
+
+test("deneme-SONRASI gerçek fiyat teaser sayılmaz: 'İlk 30 günden sonra 69,90₺' (amazon vakası)", () => {
+  const html =
+    '<html><body><p class="p">İlk 30 günden sonra Prime sadece 69,90₺/ay. İstediğin zaman iptal edebilirsin.</p></body></html>';
+  const price = extractFromCss(
+    html,
+    { selector: '.p', pattern: '([\\d.,]+\\s*₺)' },
+    'tr-TR',
+    'TRY',
+  );
+  assert.equal(price, 6990);
+});
+
 test('tüm elementler reddedilirse birleşik hata', () => {
   const html =
     '<html><body><div class="p">öğrenci indirimi ₺99</div><div class="p">deneme ₺49</div></body></html>';

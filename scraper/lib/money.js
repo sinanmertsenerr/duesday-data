@@ -21,6 +21,12 @@ export function containsTeaser(text) {
   return TEASER_PATTERN.test(text);
 }
 
+/** Teaser eşleşmesinin konumu (yoksa -1) — bağlam analizi için. */
+export function findTeaserIndex(text) {
+  const m = text.match(TEASER_PATTERN);
+  return m?.index ?? -1;
+}
+
 /**
  * "₺1.299,99", "1.299,99 TL", "$12.34" → int minör birim.
  * @param {string} raw fiyat metni (para simgesi/etiketi içerebilir)

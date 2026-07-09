@@ -9,6 +9,7 @@ import * as cheerio from 'cheerio';
 import {
   MoneyParseError,
   containsTeaser,
+  findTeaserIndex,
   parseJsonLdPrice,
   parseMoney,
 } from './money.js';
@@ -64,6 +65,29 @@ export function extractFromJsonLd(html, expectedCurrency) {
 // ("İlk 4 Ay") hemen yanındadır ama grubun içinde değildir (storytel vakası).
 const TEASER_CONTEXT_WINDOW = 80;
 const MAX_ELEMENT_ATTEMPTS = 8;
+// Fiyat-tek elementler ("₺164,99") bağlamı EBEVEYNİNDE taşır — kampanya
+// rozeti kardeş elementtedir (storytel PR #3 vakası).
+const SHORT_ELEMENT_THRESHOLD = 60;
+const PARENT_CONTEXT_WINDOW = 140;
+
+/**
+ * Bağlamda teaser var mı? İSTİSNA: teaser ile fiyat arasında
+ * 'sonra/then/after' varsa bu deneme-SONRASI gerçek liste fiyatıdır
+ * ("İlk 30 günden sonra Prime sadece 69,90₺" — amazon vakası), teaser değil.
+ */
+function isTeaserContext(context, priceIdx) {
+  const t = findTeaserIndex(context);
+  if (t === -1) return false;
+  if (t < priceIdx) {
+    const between = context.slice(t, priceIdx);
+    // 'İlk 30 günden SONRA 69,90₺' → deneme-sonrası gerçek fiyat.
+    if (/(sonra|then|after)/i.test(between)) return false;
+    // Teaser ile bizim fiyat arasında BAŞKA bir fiyat varsa teaser ona
+    // aittir ('İLK 4 AY ₺164,99 ... ₺329.99' — 329.99 temiz).
+    if (/[₺$]|\bTL\b|\bUSD\b/i.test(between)) return false;
+  }
+  return true;
+}
 
 function extractFromElementText(fullText, pattern, locale, expectedCurrency) {
   let text = fullText.trim();
@@ -86,11 +110,12 @@ function extractFromElementText(fullText, pattern, locale, expectedCurrency) {
   }
   // Teaser kontrolü hem yakalanan metinde hem eşleşmenin BAĞLAMINDA:
   // kampanya kelimesi fiyatın yanında durur, grubun içinde değil.
+  const contextStart = Math.max(0, matchIndex - TEASER_CONTEXT_WINDOW);
   const context = fullText.slice(
-    Math.max(0, matchIndex - TEASER_CONTEXT_WINDOW),
+    contextStart,
     matchIndex + text.length + TEASER_CONTEXT_WINDOW,
   );
-  if (containsTeaser(text) || containsTeaser(context)) {
+  if (containsTeaser(text) || isTeaserContext(context, matchIndex - contextStart)) {
     throw new ExtractError(`teaser/kampanya bağlamı: '${context.trim().slice(0, 80)}'`);
   }
   // Çapraz kur doğrulaması: TR fiyatı bekliyorsak metinde ₺/TL izi olmalı —
@@ -118,7 +143,23 @@ export function extractFromCss(html, { selector, pattern }, locale, expectedCurr
   const errors = [];
   for (const el of els) {
     try {
-      return extractFromElementText($(el).text(), pattern, locale, expectedCurrency);
+      const elementText = $(el).text();
+      // Kısa (fiyat-tek) elementte kampanya rozeti KARDEŞ elementtedir —
+      // ebeveyn metninde, fiyatın çevresindeki pencerede teaser ara.
+      if (elementText.trim().length < SHORT_ELEMENT_THRESHOLD) {
+        const parentText = $(el).parent().text();
+        const idx = parentText.indexOf(elementText.trim());
+        if (idx !== -1) {
+          const start = Math.max(0, idx - PARENT_CONTEXT_WINDOW);
+          const window = parentText.slice(start, idx + PARENT_CONTEXT_WINDOW);
+          if (isTeaserContext(window, idx - start)) {
+            throw new ExtractError(
+              `ebeveyn bağlamında kampanya: '${window.trim().slice(0, 80)}'`,
+            );
+          }
+        }
+      }
+      return extractFromElementText(elementText, pattern, locale, expectedCurrency);
     } catch (e) {
       if (!(e instanceof ExtractError) && !(e instanceof MoneyParseError)) throw e;
       errors.push(e.message);
