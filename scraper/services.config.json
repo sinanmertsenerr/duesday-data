@@ -97,7 +97,7 @@
     {
       "id": "storytel",
       "regions": {
-        "tr": { "url": "https://www.storytel.com/tr", "locale": "en-US", "expectedCurrency": "TRY", "css": { "selector": "[class*=defaultPrice]", "pattern": "(₺[\\d.,]+)" }, "expectedRange": [25000, 60000], "robotsCheckedAt": "2026-07-09", "_note": "sayfa ₺329.99 NOKTA-ondalık yazar → locale en-US; 'İlk 4 Ay ₺164,99' promo'su runner varyantında korumaları aşıyor → expectedRange kesin bariyer (PR #3/#4)" }
+        "tr": { "url": "https://www.storytel.com/tr", "locale": "en-US", "expectedCurrency": "TRY", "jsonLd": false, "css": { "selector": "[class*=defaultPrice]", "pattern": "(₺[\\d.,]+)" }, "expectedRange": [25000, 60000], "robotsCheckedAt": "2026-07-09", "_note": "sayfa ₺329.99 NOKTA-ondalık yazar → locale en-US; promo sızıntısının kaynağı JSON-LD (ilk TRY Offer = 'İlk 4 Ay ₺164,99' — probe 2026-07-09) → jsonLd kapalı, CSS doğru kartı okuyor; expectedRange kesin bariyer (PR #3/#4)" }
       }
     }
   ]
