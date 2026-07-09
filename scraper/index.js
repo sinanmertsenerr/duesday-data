@@ -125,6 +125,11 @@ async function main() {
     `denenen=${attempted} değişen=${diff.updates.length} aynı=${diff.unchanged} ` +
       `karantina=${diff.quarantined.length} yeni-bölge=${diff.newRegions.length} hata=${failures.length}`,
   );
+  // Hatalar log'da da görünsün: step summary'ye bakılmasa bile hangi
+  // servisin fiyatının bayatlamakta olduğu koşu log'undan okunabilir.
+  for (const f of failures) {
+    console.log(`hata: ${f.id}/${f.region}: ${f.error}`);
+  }
 
   if (diff.runAnomaly) {
     // Sistemik anomali: otomatik PR YOK; workflow issue açar.
