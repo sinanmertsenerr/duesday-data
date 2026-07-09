@@ -7,10 +7,13 @@ const LOCALES = {
   'en-US': { thousand: ',', decimal: '.' },
 };
 
-// "başlayan fiyat" kalıpları: bu metinler fiyatın kendisi değil pazarlama
-// teaser'ıdır — parse edilirse yanlış-pozitif üretir (research §5).
+// "başlayan fiyat" / kampanya kalıpları: bu metinler kalıcı liste fiyatı
+// değil pazarlama teaser'ıdır — parse edilirse yanlış-pozitif üretir
+// (research §5; storytel 'İlk 4 Ay ₺164,99' vakası 2026-07-09).
+// NOT: JS /i bayrağı 'İ' (U+0130) ↔ 'i' eşleşmesi YAPMAZ (Türkçe İ tuzağı)
+// — 'İlk/İLK' için karakter sınıfı şart.
 const TEASER_PATTERN =
-  /(başlayan|itibaren|starting|starts at|\bfrom\b|as low as)/i;
+  /(başlayan|[iİ]t[iİ]baren|starting|starts at|\bfrom\b|as low as|[iİ]lk\s+\d+\s+(ay|hafta|gün)|öğrenc[iİ]|[iİ]nd[iİ]r[iİ]m|kampanya|deneme|first\s+\d+\s+(month|week)s?|\btrial\b|\bpromo)/i;
 
 export class MoneyParseError extends Error {}
 

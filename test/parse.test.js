@@ -69,6 +69,39 @@ test('pattern\'sız + birden fazla fiyat işareti → ExtractError (rakam yapı�
   );
 });
 
+test('kampanya BAĞLAMI reddedilir: "İlk 4 Ay ₺164,99" (grup salt fiyat olsa bile)', () => {
+  const html =
+    '<html><body><div class="p">İlk 4 Ay ₺164,99/ay fırsatı</div></body></html>';
+  assert.throws(
+    () => extractFromCss(html, { selector: '.p', pattern: '(₺[\\d.,]+)' }, 'tr-TR', 'TRY'),
+    (e) => e instanceof ExtractError && /teaser|kampanya/.test(e.message),
+  );
+});
+
+test('promo kart önde olsa bile sıradaki temiz element kazanır (storytel vakası)', () => {
+  const html =
+    '<html><body>' +
+    '<div class="defaultPrice">İLK 4 AY ₺164,99/ay</div>' +
+    '<div class="defaultPrice">₺329.99</div>' +
+    '</body></html>';
+  const price = extractFromCss(
+    html,
+    { selector: '[class*=defaultPrice]', pattern: '(₺[\\d.,]+)' },
+    'en-US',
+    'TRY',
+  );
+  assert.equal(price, 32999);
+});
+
+test('tüm elementler reddedilirse birleşik hata', () => {
+  const html =
+    '<html><body><div class="p">öğrenci indirimi ₺99</div><div class="p">deneme ₺49</div></body></html>';
+  assert.throws(
+    () => extractFromCss(html, { selector: '.p', pattern: '(₺[\\d.,]+)' }, 'tr-TR', 'TRY'),
+    (e) => e instanceof ExtractError && /element denendi/.test(e.message),
+  );
+});
+
 test('selector eşleşmezse ExtractError (kırık selector = izole hata)', () => {
   assert.throws(
     () => extractFromCss('<html><body></body></html>', { selector: '.yok' }, 'tr-TR', 'TRY'),

@@ -59,31 +59,39 @@ export function extractFromJsonLd(html, expectedCurrency) {
   );
 }
 
-/** CSS selector + opsiyonel regex ile fiyat metni çıkar. */
-export function extractFromCss(html, { selector, pattern }, locale, expectedCurrency) {
-  const $ = cheerio.load(html);
-  const el = $(selector).first();
-  if (el.length === 0) {
-    throw new ExtractError(`selector eşleşmedi: ${selector}`);
-  }
-  let text = el.text().trim();
+// Eşleşme çevresinde teaser/kampanya araması için pencere (karakter).
+// Yakalanan grup çoğu zaman salt "₺164,99" olur — kampanya kelimesi
+// ("İlk 4 Ay") hemen yanındadır ama grubun içinde değildir (storytel vakası).
+const TEASER_CONTEXT_WINDOW = 80;
+const MAX_ELEMENT_ATTEMPTS = 8;
+
+function extractFromElementText(fullText, pattern, locale, expectedCurrency) {
+  let text = fullText.trim();
+  let matchIndex = 0;
   if (pattern) {
     const m = text.match(new RegExp(pattern));
     if (!m) throw new ExtractError(`pattern eşleşmedi: '${text.slice(0, 80)}'`);
+    matchIndex = m.index ?? 0;
     text = m[m.length > 1 ? 1 : 0];
   } else {
     // Pattern'sız kullanımda element birden fazla fiyat içeriyorsa (üstü
     // çizili eski fiyat + indirimli yeni fiyat gibi) rakamlar birbirine
     // yapışıp "geçerli görünen" saçma bir sayı üretir — yüksek sesle reddet.
-    const markers = text.match(/[₺$]|\bTL\b|\bUSD\b/gi) ?? [];
+    const markers = fullText.match(/[₺$]|\bTL\b|\bUSD\b/gi) ?? [];
     if (markers.length > 1) {
       throw new ExtractError(
-        `birden fazla fiyat işareti — pattern zorunlu: '${text.slice(0, 80)}'`,
+        `birden fazla fiyat işareti — pattern zorunlu: '${fullText.slice(0, 80)}'`,
       );
     }
   }
-  if (containsTeaser(text)) {
-    throw new ExtractError(`teaser metni: '${text.slice(0, 80)}'`);
+  // Teaser kontrolü hem yakalanan metinde hem eşleşmenin BAĞLAMINDA:
+  // kampanya kelimesi fiyatın yanında durur, grubun içinde değil.
+  const context = fullText.slice(
+    Math.max(0, matchIndex - TEASER_CONTEXT_WINDOW),
+    matchIndex + text.length + TEASER_CONTEXT_WINDOW,
+  );
+  if (containsTeaser(text) || containsTeaser(context)) {
+    throw new ExtractError(`teaser/kampanya bağlamı: '${context.trim().slice(0, 80)}'`);
   }
   // Çapraz kur doğrulaması: TR fiyatı bekliyorsak metinde ₺/TL izi olmalı —
   // consent duvarı / yanlış bölge sayfası burada yakalanır.
@@ -93,6 +101,32 @@ export function extractFromCss(html, { selector, pattern }, locale, expectedCurr
     );
   }
   return parseMoney(text, locale);
+}
+
+/**
+ * CSS selector + opsiyonel regex ile fiyat çıkar. Selector birden çok
+ * elemente eşleşirse ilk TEMİZ geçen kazanır: promosyon kartı öne
+ * geçtiğinde (teaser bağlamıyla reddedilir) sıradaki gerçek fiyat kartı
+ * denenir — koşudan koşuya element sırası değişse de sonuç kararlı kalır.
+ */
+export function extractFromCss(html, { selector, pattern }, locale, expectedCurrency) {
+  const $ = cheerio.load(html);
+  const els = $(selector).toArray().slice(0, MAX_ELEMENT_ATTEMPTS);
+  if (els.length === 0) {
+    throw new ExtractError(`selector eşleşmedi: ${selector}`);
+  }
+  const errors = [];
+  for (const el of els) {
+    try {
+      return extractFromElementText($(el).text(), pattern, locale, expectedCurrency);
+    } catch (e) {
+      if (!(e instanceof ExtractError) && !(e instanceof MoneyParseError)) throw e;
+      errors.push(e.message);
+    }
+  }
+  throw new ExtractError(
+    `${els.length} element denendi, hiçbiri geçmedi: ${errors[0]}`,
+  );
 }
 
 /**

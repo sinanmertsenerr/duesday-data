@@ -4,8 +4,8 @@
     {
       "id": "netflix",
       "regions": {
-        "tr": { "url": "https://help.netflix.com/tr/node/24926", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "body", "pattern": "Standart plan aylık ([\\d.,]+\\s*TL)" }, "robotsCheckedAt": "2026-07-09", "_note": "help-center içeriği geo-IP seçimli: US runner'dan TR fiyatı gelmeyebilir → kur kontrolü fail-closed düşürür (bilinen sınır)" },
-        "us": { "url": "https://help.netflix.com/en/node/24926", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "body", "pattern": "Standard: ([\\d.,]+\\s*USD)" }, "robotsCheckedAt": "2026-07-09" }
+        "tr": { "url": "https://help.netflix.com/tr/node/24926", "locale": "tr-TR", "expectedCurrency": "TRY", "enabled": false, "_note": "geo-IP: help-center içeriği IP'den seçiliyor, US runner TR fiyatı GÖREMEZ (2026-07-09 koşusunda doğrulandı) — TR proxy/self-hosted runner kararına kadar kapalı", "robotsCheckedAt": "2026-07-09" },
+        "us": { "url": "https://help.netflix.com/en/node/24926", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "body", "pattern": "Standard:?\\s*(\\$[\\d.,]+|[\\d.,]+\\s*USD)" }, "robotsCheckedAt": "2026-07-09", "_note": "US içerik TR IP'den görülemedi; pattern hem '\\$17.99' hem '17.99 USD' biçimini kabul eder — ilk koşuda izle" }
       }
     },
     {
@@ -78,7 +78,7 @@
     {
       "id": "mubi",
       "regions": {
-        "tr": { "url": "https://mubi.com/tr/memberships", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "#__NEXT_DATA__", "pattern": "\"month\":\\{[^}]*?\"price\":\"(₺[\\d.,]+)\"" }, "robotsCheckedAt": "2026-07-09", "_note": "fiyat __NEXT_DATA__ JSON'unda — CSS hash'lerinden daha stabil" },
+        "tr": { "url": "https://mubi.com/tr/memberships", "locale": "tr-TR", "expectedCurrency": "TRY", "enabled": false, "_note": "geo-IP: para birimi IP'den seçiliyor, US runner TR fiyatı göremiyor (2026-07-09 koşusunda doğrulandı) — TR proxy kararına kadar kapalı", "robotsCheckedAt": "2026-07-09" },
         "us": { "url": "https://mubi.com/en/memberships", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "#__NEXT_DATA__", "pattern": "\"month\":\\{[^}]*?\"price\":\"(\\$[\\d.,]+)\"" }, "robotsCheckedAt": "2026-07-09", "_note": "para birimi IP'den seçiliyor — US runner'dan USD beklenir, TR IP'den doğrulanamadı" }
       }
     },
