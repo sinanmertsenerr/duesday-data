@@ -81,6 +81,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TITLE="Scraper dikkat: $(date -u +%F) koşusunda anomali/karantina"
+          # Etiket yoksa oluştur (ilk koşu temiz repoda kırılmasın).
+          gh label create scraper-alert --color D93F0B \
+            --description "Scraper anomali/karantina uyarısı" || true
           EXISTING=$(gh issue list --label scraper-alert --state open --json number --jq '.[0].number')
           if [ -n "$EXISTING" ]; then
             gh issue comment "$EXISTING" --body-file .scrape-out/report.md
