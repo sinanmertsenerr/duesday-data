@@ -19,7 +19,10 @@ import { extractPrice } from './lib/parse.js';
 import { buildPrBody } from './lib/prbody.js';
 import { validateCatalog } from './lib/validate.js';
 
-const repoDir = join(dirname(fileURLToPath(import.meta.url)), '..');
+// Test edilebilirlik: main() akışı geçici bir repo kopyasına yönlendirilebilir.
+const repoDir =
+  process.env.DUESDAY_REPO_DIR ??
+  join(dirname(fileURLToPath(import.meta.url)), '..');
 const STAGGER_MS = 15_000; // servisler arası bekleme (politeness)
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

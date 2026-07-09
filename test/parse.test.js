@@ -60,6 +60,15 @@ test('teaser sayfası: "başlayan fiyatlarla" reddedilir', () => {
   );
 });
 
+test('pattern\'sız + birden fazla fiyat işareti → ExtractError (rakam yapışması önlenir)', () => {
+  const html =
+    '<html><body><div class="p"><s>₺99,99</s> ₺79,99</div></body></html>';
+  assert.throws(
+    () => extractFromCss(html, { selector: '.p' }, 'tr-TR', 'TRY'),
+    (e) => e instanceof ExtractError && /birden fazla/.test(e.message),
+  );
+});
+
 test('selector eşleşmezse ExtractError (kırık selector = izole hata)', () => {
   assert.throws(
     () => extractFromCss('<html><body></body></html>', { selector: '.yok' }, 'tr-TR', 'TRY'),

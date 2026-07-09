@@ -22,7 +22,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
  */
 export async function fetchPage(url, opts = {}) {
   const {
-    timeoutMs = 30_000,
+    timeoutMs = 20_000,
     retries = 1,
     retryDelayMs = 10_000,
     acceptLanguage,

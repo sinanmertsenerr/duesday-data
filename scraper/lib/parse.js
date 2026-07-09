@@ -71,6 +71,16 @@ export function extractFromCss(html, { selector, pattern }, locale, expectedCurr
     const m = text.match(new RegExp(pattern));
     if (!m) throw new ExtractError(`pattern eşleşmedi: '${text.slice(0, 80)}'`);
     text = m[m.length > 1 ? 1 : 0];
+  } else {
+    // Pattern'sız kullanımda element birden fazla fiyat içeriyorsa (üstü
+    // çizili eski fiyat + indirimli yeni fiyat gibi) rakamlar birbirine
+    // yapışıp "geçerli görünen" saçma bir sayı üretir — yüksek sesle reddet.
+    const markers = text.match(/[₺$]|\bTL\b|\bUSD\b/gi) ?? [];
+    if (markers.length > 1) {
+      throw new ExtractError(
+        `birden fazla fiyat işareti — pattern zorunlu: '${text.slice(0, 80)}'`,
+      );
+    }
   }
   if (containsTeaser(text)) {
     throw new ExtractError(`teaser metni: '${text.slice(0, 80)}'`);

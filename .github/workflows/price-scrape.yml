@@ -20,7 +20,9 @@ concurrency:
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # Kötü gün bütçesi: 23 bölge × (20s timeout + retry + 15s stagger)
+    # ≈ 25-30 dk olabilir; 30 dk'lık tavan sessiz yarıda-kesilme üretir.
+    timeout-minutes: 50
     steps:
       - uses: actions/checkout@v4
 
@@ -43,6 +45,19 @@ jobs:
         id: scrape
         run: node scraper/index.js
 
+      # Rapor her koşulda (validasyon hatası dahil) insan-görünür olsun.
+      - name: Koşu özeti
+        if: always()
+        run: |
+          if [ -f .scrape-out/report.md ]; then
+            cat .scrape-out/report.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      # NOT: GITHUB_TOKEN ile açılan PR, ci.yml'in pull_request tetiğini
+      # ÇALIŞTIRMAZ (GitHub'ın bilinçli kısıtı). PR'daki veri yine de iki
+      # kapıdan geçmiştir: bu job'daki `npm test` + index.js'in yazmadan
+      # önceki validateCatalog kapısı. ci.yml PR'da da koşsun istenirse
+      # `token:` alanına PAT verilmeli.
       - name: PR aç / güncelle
         if: steps.scrape.outputs.has_updates == 'true'
         uses: peter-evans/create-pull-request@v7
@@ -61,7 +76,7 @@ jobs:
       # Karantina/anomali/hata insan gözüne issue olarak düşer — sessiz
       # yutma yok (anayasa §9 ruhu CI'da da geçerli).
       - name: Anomali/karantina issue'su
-        if: steps.scrape.outputs.run_anomaly == 'true' || steps.scrape.outputs.has_quarantine == 'true'
+        if: always() && (steps.scrape.outputs.run_anomaly == 'true' || steps.scrape.outputs.has_quarantine == 'true')
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
