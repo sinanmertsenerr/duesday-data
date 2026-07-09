@@ -1,5 +1,14 @@
 {
   "schemaVersion": 1,
-  "changedAt": null,
-  "changes": []
+  "changedAt": "2026-07-09",
+  "changes": [
+    {
+      "id": "hbo-max",
+      "region": "us",
+      "oldMinorUnits": 1099,
+      "newMinorUnits": 658,
+      "currency": "USD",
+      "sourceUrl": "https://www.hbomax.com/"
+    }
+  ]
 }
