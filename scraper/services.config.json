@@ -47,7 +47,7 @@
       "id": "disney-plus",
       "regions": {
         "tr": { "url": "https://www.disneyplus.com/tr-tr", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "main", "pattern": "(₺[\\d.,]+|[\\d.,]+\\s*TL)" }, "robotsCheckedAt": "2026-07-09" },
-        "us": { "url": "https://www.disneyplus.com/", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "main", "pattern": "(\\$[\\d.,]+)" }, "robotsCheckedAt": "2026-07-09" }
+        "us": { "url": "https://www.disneyplus.com/", "locale": "en-US", "expectedCurrency": "USD", "enabled": false, "css": { "selector": "main", "pattern": "(\\$[\\d.,]+)" }, "robotsCheckedAt": "2026-07-09", "_note": "ana sayfadaki TÜM fiyatlar bundle 6-ay promosu (probe 2026-07-09: 'then renews to $12.99/month' yasal metni); kalıcı temel-plan fiyatı statik HTML'de YOK, help makalesi de JS-render — headless kararına kadar kapalı, katalog $11.99 elle doğrulanmış kalır" }
       }
     },
     {
