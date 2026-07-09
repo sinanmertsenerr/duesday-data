@@ -1,0 +1,151 @@
+// M6: FCM HTTP v1 gönderici — merge sonrası zam push'ları.
+//
+// VERİ SÖZLEŞMESİ: data-only mesaj (notification alanı YOK) — metni app
+// kendi diliyle ve GRANDFATHERING kurallarıyla üretir (app tarafındaki
+// karşılık: lib/features/push/domain/price_push_payload.dart, PAYLOAD_VERSION
+// oradaki supportedVersion ile birebir aynı olmalı). Topic adı da app'in
+// PushTopics.desired üretimiyle kilitli: `svc-{id}-{region}`.
+//
+// M8 notu (SPEC): plan-bazlı topic'ler eklendiğinde gönderici hem taban
+// topic'e hem plan topic'ine YAYINLAMALI — eski app sürümleri aylarca
+// taban topic'te yaşar.
+
+import { createSign } from 'node:crypto';
+
+export const PAYLOAD_VERSION = 1;
+
+/** changes/latest.json + catalog.json → gönderilecek FCM mesajları. */
+export function buildPushMessages(artifact, catalog) {
+  if (!artifact || artifact.schemaVersion !== 1) return [];
+  const names = new Map(
+    (catalog?.services ?? []).map((s) => [s.id, s.name ?? s.id]),
+  );
+  const messages = [];
+  for (const c of artifact.changes ?? []) {
+    if (!c?.id || !c?.region || c.oldMinorUnits === c.newMinorUnits) continue;
+    const topic = `svc-${c.id}-${c.region}`;
+    messages.push({
+      message: {
+        topic,
+        // FCM data değerleri STRING olmak zorunda.
+        data: {
+          v: String(PAYLOAD_VERSION),
+          id: String(c.id),
+          name: String(names.get(c.id) ?? c.id),
+          region: String(c.region),
+          oldMinorUnits: String(c.oldMinorUnits),
+          newMinorUnits: String(c.newMinorUnits),
+          currency: String(c.currency),
+        },
+        android: {
+          // Aynı servisin ardışık push'ları cihazda tek bildirime iner
+          // (at-least-once + hızlı düzeltme senaryosu).
+          collapse_key: topic,
+          priority: 'normal',
+        },
+      },
+    });
+  }
+  return messages;
+}
+
+/** Service-account JWT → OAuth access token (ek bağımlılık yok). */
+export async function mintAccessToken(saKey, fetchImpl = fetch) {
+  const now = Math.floor(Date.now() / 1000);
+  const header = b64url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
+  const claims = b64url(
+    JSON.stringify({
+      iss: saKey.client_email,
+      scope: 'https://www.googleapis.com/auth/firebase.messaging',
+      aud: saKey.token_uri,
+      iat: now,
+      exp: now + 3600,
+    }),
+  );
+  const signer = createSign('RSA-SHA256');
+  signer.update(`${header}.${claims}`);
+  const signature = signer
+    .sign(saKey.private_key, 'base64')
+    .replaceAll('+', '-')
+    .replaceAll('/', '_')
+    .replace(/=+$/, '');
+  const jwt = `${header}.${claims}.${signature}`;
+
+  const res = await fetchImpl(saKey.token_uri, {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion: jwt,
+    }),
+  });
+  if (!res.ok) {
+    // Token değeri ASLA loglanmaz; yalnız durum kodu.
+    throw new Error(`token exchange failed: HTTP ${res.status}`);
+  }
+  const body = await res.json();
+  if (!body.access_token) throw new Error('token exchange: access_token yok');
+  return body.access_token;
+}
+
+/**
+ * Mesajları tek tek gönderir — per-mesaj izolasyon (scraper'ın
+ * failures-push idiyomu): biri patlarsa diğerleri devam eder.
+ * 429'da 60 sn (resmî minimum), 5xx'te 5 sn bekleyip BİR kez yeniden dener.
+ */
+export async function sendAll(messages, { projectId, token, fetchImpl = fetch, sleep = defaultSleep }) {
+  const url = `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`;
+  const sent = [];
+  const failures = [];
+  for (const payload of messages) {
+    const outcome = await sendOne(url, token, payload, fetchImpl, sleep);
+    (outcome.ok ? sent : failures).push({
+      topic: payload.message.topic,
+      ...(outcome.ok ? {} : { error: outcome.error }),
+    });
+  }
+  return { sent, failures };
+}
+
+async function sendOne(url, token, payload, fetchImpl, sleep) {
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const res = await fetchImpl(url, {
+        method: 'POST',
+        headers: {
+          // Token env/bellekte kalır, CLI arg'a veya loga asla çıkmaz.
+          authorization: `Bearer ${token}`,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) return { ok: true };
+      if (attempt === 1 && res.status === 429) {
+        await sleep(60_000); // resmî minimum backoff
+        continue;
+      }
+      if (attempt === 1 && res.status >= 500) {
+        await sleep(5_000);
+        continue;
+      }
+      return { ok: false, error: `HTTP ${res.status}` };
+    } catch (err) {
+      if (attempt === 1) {
+        await sleep(5_000);
+        continue;
+      }
+      return { ok: false, error: err.message };
+    }
+  }
+  return { ok: false, error: 'unreachable' };
+}
+
+const defaultSleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+function b64url(input) {
+  return Buffer.from(input)
+    .toString('base64')
+    .replaceAll('+', '-')
+    .replaceAll('/', '_')
+    .replace(/=+$/, '');
+}

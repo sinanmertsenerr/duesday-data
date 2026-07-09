@@ -106,6 +106,34 @@ jobs:
             git push origin main
           fi
 
+      # M6: zam push'u — MERGE'ten sonra, deploy'u asla bloklamaz.
+      # Ayrı `on: push` workflow'u OLMAZ: GITHUB_TOKEN merge'i onu hiç
+      # tetiklemezdi (history.yml dersi, yukarıdaki not). Secret yalnız
+      # env üzerinden node process'ine girer; türetilmiş OAuth token
+      # bellekte kalır, log'a/CLI arg'a asla çıkmaz (SPEC M6 DoD).
+      - name: FCM zam push'u (best-effort)
+        id: fcm
+        if: steps.scrape.outputs.has_updates == 'true' && steps.pr.outputs.pull-request-number != ''
+        continue-on-error: true
+        env:
+          FCM_SA_KEY: ${{ secrets.FCM_SA_KEY }}
+        run: node scraper/bin/send-fcm.js
+
+      - name: FCM hatası issue'ya düşsün (sessiz bayatlama yok)
+        if: steps.fcm.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create scraper-alert --color D93F0B \
+            --description "Scraper anomali/karantina uyarısı" || true
+          BODY="FCM push gönderimi başarısız ($(date -u +%F)) — koşu log'una bak: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}. Katalog deploy'u ETKİLENMEDİ (push best-effort)."
+          EXISTING=$(gh issue list --label scraper-alert --state open --json number --jq '.[0].number')
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --body "$BODY"
+          else
+            gh issue create --title "FCM push hatası: $(date -u +%F)" --label scraper-alert --body "$BODY"
+          fi
+
       # Karantina/anomali/hata insan gözüne issue olarak düşer — sessiz
       # yutma yok (anayasa §9 ruhu CI'da da geçerli). Scrape hatası da
       # dahil: hata süren servis = sessizce bayatlayan fiyat = kaçan
