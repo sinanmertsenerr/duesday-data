@@ -1,5 +1,22 @@
 {
   "schemaVersion": 1,
-  "changedAt": null,
-  "changes": []
+  "changedAt": "2026-07-09",
+  "changes": [
+    {
+      "id": "netflix",
+      "region": "us",
+      "oldMinorUnits": 899,
+      "newMinorUnits": 1999,
+      "currency": "USD",
+      "sourceUrl": "https://help.netflix.com/en/node/24926"
+    },
+    {
+      "id": "storytel",
+      "region": "tr",
+      "oldMinorUnits": 32999,
+      "newMinorUnits": 16499,
+      "currency": "TRY",
+      "sourceUrl": "https://www.storytel.com/tr"
+    }
+  ]
 }
