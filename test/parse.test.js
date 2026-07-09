@@ -122,6 +122,27 @@ test("deneme-SONRASI gerçek fiyat teaser sayılmaz: 'İlk 30 günden sonra 69,9
   assert.equal(price, 6990);
 });
 
+test("deneme-SONRASI ters sıra da teaser sayılmaz: '$14.99 per month after trial' (amazon us vakası)", () => {
+  const html =
+    '<html><body><div class="c">Prime Monthly$14.99per month after trial</div></body></html>';
+  const price = extractFromCss(
+    html,
+    { selector: '.c', pattern: 'Prime Monthly(\\$[\\d.,]+)' },
+    'en-US',
+    'USD',
+  );
+  assert.equal(price, 1499);
+});
+
+test("fiyattan SONRAKİ gerçek teaser hâlâ reddedilir: '$11.99 ... Save with promo'", () => {
+  const html =
+    '<html><body><div class="c">Starting at $11.99/mo. Save 20% with promo bundle</div></body></html>';
+  assert.throws(
+    () => extractFromCss(html, { selector: '.c', pattern: '(\\$[\\d.,]+)' }, 'en-US', 'USD'),
+    (e) => e instanceof ExtractError && /teaser|kampanya/.test(e.message),
+  );
+});
+
 test('tüm elementler reddedilirse birleşik hata', () => {
   const html =
     '<html><body><div class="p">öğrenci indirimi ₺99</div><div class="p">deneme ₺49</div></body></html>';

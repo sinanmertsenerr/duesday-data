@@ -41,8 +41,11 @@ export async function runScrape(catalog, config, fetcher, { staggerMs = 0 } = {}
       if (rc.enabled === false) continue;
       attempted += 1;
       try {
+        // rc.fetch: bölge-bazlı retry/backoff aşımı (amazon 429/503 —
+        // IP-itibar duyarlı hedeflere daha sabırlı davranılır).
         const html = await fetcher(rc.url, {
           acceptLanguage: rc.locale === 'tr-TR' ? 'tr-TR,tr;q=0.9' : 'en-US,en;q=0.9',
+          ...(rc.fetch ?? {}),
         });
         const minorUnits = extractPrice(html, rc);
         // Servis-başına beklenen aralık: promo/A-B varyantları hangi

@@ -39,8 +39,8 @@
     {
       "id": "amazon-prime",
       "regions": {
-        "tr": { "url": "https://www.amazon.com.tr/amazonprime", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "p[data-prime-customer-name-field].a-size-base", "pattern": "([\\d.,]+\\s*₺)" }, "robotsCheckedAt": "2026-07-09", "_note": "para birimi sayının SONUNDA (69,90₺); Amazon bot koruması IP-itibar duyarlı, tutarsız 429/503 normal" },
-        "us": { "url": "https://www.amazon.com/amazonprime", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "div[data-index=\"1\"]", "pattern": "(\\$[\\d.,]+)" }, "robotsCheckedAt": "2026-07-09" }
+        "tr": { "url": "https://www.amazon.com.tr/amazonprime", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "p[data-prime-customer-name-field].a-size-base", "pattern": "([\\d.,]+\\s*₺)" }, "fetch": { "retries": 3, "retryDelayMs": 20000 }, "robotsCheckedAt": "2026-07-09", "_note": "para birimi sayının SONUNDA (69,90₺); Amazon bot koruması IP-itibar duyarlı, tutarsız 429/503 normal → bölge-bazlı sabırlı backoff (20/40/60sn)" },
+        "us": { "url": "https://www.amazon.com/amazonprime", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "div[data-index=\"1\"]", "pattern": "(\\$[\\d.,]+)" }, "fetch": { "retries": 3, "retryDelayMs": 20000 }, "robotsCheckedAt": "2026-07-09", "_note": "429 IP-itibar duyarlı → bölge-bazlı sabırlı backoff (20/40/60sn)" }
       }
     },
     {

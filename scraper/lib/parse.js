@@ -85,6 +85,13 @@ function isTeaserContext(context, priceIdx) {
     // Teaser ile bizim fiyat arasında BAŞKA bir fiyat varsa teaser ona
     // aittir ('İLK 4 AY ₺164,99 ... ₺329.99' — 329.99 temiz).
     if (/[₺$]|\bTL\b|\bUSD\b/i.test(between)) return false;
+  } else {
+    // Teaser fiyattan SONRA: '$14.99 per month after trial' (amazon us) —
+    // teaser kelimesinin HEMEN önünde after/then varsa bu deneme-SONRASI
+    // gerçek liste fiyatıdır. Kalıp bilinçli dar: 'Save 20% with promo'
+    // gibi gerçek teaser'larda after/then bitişiği yoktur.
+    const between = context.slice(priceIdx, t);
+    if (/\b(after|then)\s+(the\s+)?$/i.test(between)) return false;
   }
   return true;
 }

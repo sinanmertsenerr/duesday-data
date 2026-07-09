@@ -89,6 +89,24 @@ test('expectedRange dışı okuma diff\'e giremez, hata olarak rapora düşer', 
   assert.match(f.error, /aralık dışı/);
 });
 
+test('rc.fetch bölge-bazlı retry/backoff fetcher\'a aynen geçer (amazon 429)', async () => {
+  const cfg = structuredClone(config);
+  cfg.services[0].regions.tr.fetch = { retries: 3, retryDelayMs: 20000 };
+  const seen = [];
+  const fetcher = async (url, opts) => {
+    seen.push({ url, opts });
+    return cssPage;
+  };
+  await runScrape(catalog, cfg, fetcher);
+  const a = seen.find((c) => c.url.startsWith('https://a.example'));
+  assert.equal(a.opts.retries, 3);
+  assert.equal(a.opts.retryDelayMs, 20000);
+  assert.equal(a.opts.acceptLanguage, 'tr-TR,tr;q=0.9');
+  // fetch aşımı olmayan bölge varsayılanlarla gider (opts'ta retry alanı yok).
+  const b = seen.find((c) => c.url.startsWith('https://b.example'));
+  assert.equal(b.opts.retries, undefined);
+});
+
 test('enabled:false bölgeler hiç denenmez', async () => {
   let calls = 0;
   const fetcher = async () => {
