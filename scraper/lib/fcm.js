@@ -22,7 +22,12 @@ export function buildPushMessages(artifact, catalog) {
   );
   const messages = [];
   for (const c of artifact.changes ?? []) {
-    if (!c?.id || !c?.region || c.oldMinorUnits === c.newMinorUnits) continue;
+    // !oldMinorUnits: 0/null/undefined — diff.js doğal akışta old=0
+    // üretmez (karantina yakalar); bu elle bozulmuş artefact'a karşı
+    // ikinci hat (app tarafı da reddeder — sözleşme iki uçta simetrik).
+    if (!c?.id || !c?.region || !c.oldMinorUnits || c.oldMinorUnits === c.newMinorUnits) {
+      continue;
+    }
     const topic = `svc-${c.id}-${c.region}`;
     messages.push({
       message: {

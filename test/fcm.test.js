@@ -39,8 +39,9 @@ test('buildPushMessages: topic app tarafıyla kilitli (svc-{id}-{region}), data 
   assert.equal(msg.message.notification, undefined);
 });
 
-test('buildPushMessages: fiyatı değişmeyen / bilinmeyen şema atlanır', () => {
+test('buildPushMessages: fiyatı değişmeyen / bilinmeyen şema / old=0 atlanır', () => {
   assert.deepEqual(buildPushMessages(artifact([change({ newMinorUnits: 22999 })]), catalog), []);
+  assert.deepEqual(buildPushMessages(artifact([change({ oldMinorUnits: 0 })]), catalog), []);
   assert.deepEqual(buildPushMessages({ schemaVersion: 2, changes: [change()] }, catalog), []);
   assert.deepEqual(buildPushMessages(artifact([]), catalog), []);
 });

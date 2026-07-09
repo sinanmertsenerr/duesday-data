@@ -23,7 +23,15 @@ if (!rawKey) {
   console.log('::warning::FCM_SA_KEY tanımlı değil — push adımı atlandı.');
   process.exit(0);
 }
-const saKey = JSON.parse(rawKey);
+let saKey;
+try {
+  saKey = JSON.parse(rawKey);
+} catch {
+  // Ham girdi/parse detayı ASLA basılmaz — secret parçası log'a düşemez
+  // (GitHub maskeleme + kod-seviyesi garanti, çifte hat).
+  console.error('::error::FCM_SA_KEY JSON olarak parse edilemedi');
+  process.exit(1);
+}
 
 const token = await mintAccessToken(saKey);
 const { sent, failures } = await sendAll(messages, {
