@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Örnek abonelik sayfası — JSON-LD'li</title>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": "Premium Plan",
+    "offers": [
+      { "@type": "Offer", "price": "57.99", "priceCurrency": "TRY" },
+      { "@type": "Offer", "price": "10.99", "priceCurrency": "USD" }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <main><div class="price">₺57,99/ay</div></main>
+</body>
+</html>

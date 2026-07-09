@@ -1,0 +1,104 @@
+{
+  "_comment": "İlk 15 servis (SPEC M5). id'ler catalog.json ile birebir — scraper id ÜRETMEZ. Her bölge: url + locale + expectedCurrency sabittir; kaynaktan tahmin yasak. css.selector/pattern ilk canlı koşuda servis-servis kalibre edilir — kırık selector o servisi izole düşürür, hattı durdurmaz. robots: elle kontrol tarihi.",
+  "services": [
+    {
+      "id": "netflix",
+      "regions": {
+        "tr": { "url": "https://help.netflix.com/tr/node/24926", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "article", "pattern": "Standart[^₺]*(₺[\\d.,]+)" }, "robotsCheckedAt": null },
+        "us": { "url": "https://help.netflix.com/en/node/24926", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "article", "pattern": "Standard[^$]*(\\$[\\d.,]+)" }, "robotsCheckedAt": null }
+      }
+    },
+    {
+      "id": "spotify",
+      "regions": {
+        "tr": { "url": "https://www.spotify.com/tr-tr/premium/", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "[data-testid*=individual], main", "pattern": "(₺[\\d.,]+|[\\d.,]+\\s*TL)" }, "robotsCheckedAt": null },
+        "us": { "url": "https://www.spotify.com/us/premium/", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "[data-testid*=individual], main", "pattern": "(\\$[\\d.,]+)" }, "robotsCheckedAt": null }
+      }
+    },
+    {
+      "id": "youtube-premium",
+      "regions": {
+        "tr": { "url": "https://www.youtube.com/premium", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "body", "pattern": "(₺[\\d.,]+|[\\d.,]+\\s*TL)" }, "robotsCheckedAt": null, "enabled": false, "_note": "geo-IP bağımlı; TR fiyatı US runner'dan güvenilir çekilemiyor — Playwright/proxy kararına kadar kapalı" },
+        "us": { "url": "https://www.youtube.com/premium", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "body", "pattern": "(\\$[\\d.,]+)" }, "robotsCheckedAt": null }
+      }
+    },
+    {
+      "id": "apple-music",
+      "regions": {
+        "tr": { "url": "https://www.apple.com/tr/apple-music/", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "main", "pattern": "(₺[\\d.,]+|[\\d.,]+\\s*TL)" }, "robotsCheckedAt": null },
+        "us": { "url": "https://www.apple.com/apple-music/", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "main", "pattern": "(\\$[\\d.,]+)" }, "robotsCheckedAt": null }
+      }
+    },
+    {
+      "id": "apple-icloud",
+      "regions": {
+        "tr": { "url": "https://support.apple.com/tr-tr/108047", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "#sections", "pattern": "50\\s*GB[^₺]*(₺[\\d.,]+|[\\d.,]+\\s*TL)" }, "robotsCheckedAt": null },
+        "us": { "url": "https://support.apple.com/en-us/108047", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "#sections", "pattern": "50\\s*GB[^$]*(\\$[\\d.,]+)" }, "robotsCheckedAt": null }
+      }
+    },
+    {
+      "id": "amazon-prime",
+      "regions": {
+        "tr": { "url": "https://www.amazon.com.tr/amazonprime", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "body", "pattern": "(₺[\\d.,]+|[\\d.,]+\\s*TL)" }, "robotsCheckedAt": null },
+        "us": { "url": "https://www.amazon.com/amazonprime", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "body", "pattern": "(\\$[\\d.,]+)" }, "robotsCheckedAt": null }
+      }
+    },
+    {
+      "id": "disney-plus",
+      "regions": {
+        "tr": { "url": "https://www.disneyplus.com/tr-tr", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "main", "pattern": "(₺[\\d.,]+|[\\d.,]+\\s*TL)" }, "robotsCheckedAt": null },
+        "us": { "url": "https://www.disneyplus.com/", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "main", "pattern": "(\\$[\\d.,]+)" }, "robotsCheckedAt": null }
+      }
+    },
+    {
+      "id": "hbo-max",
+      "regions": {
+        "tr": { "url": "https://www.hbomax.com/tr/tr", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "main", "pattern": "(₺[\\d.,]+|[\\d.,]+\\s*TL)" }, "robotsCheckedAt": null },
+        "us": { "url": "https://www.hbomax.com/", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "main", "pattern": "(\\$[\\d.,]+)" }, "robotsCheckedAt": null }
+      }
+    },
+    {
+      "id": "exxen",
+      "regions": {
+        "tr": { "url": "https://www.exxen.com/tr/paketler", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "body", "pattern": "(₺[\\d.,]+|[\\d.,]+\\s*TL)" }, "robotsCheckedAt": null }
+      }
+    },
+    {
+      "id": "bein-connect",
+      "regions": {
+        "tr": { "url": "https://www.beinconnect.com.tr/paketler", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "body", "pattern": "(₺[\\d.,]+|[\\d.,]+\\s*TL)" }, "robotsCheckedAt": null }
+      }
+    },
+    {
+      "id": "tod",
+      "regions": {
+        "tr": { "url": "https://www.todtv.com.tr/paketler", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "body", "pattern": "(₺[\\d.,]+|[\\d.,]+\\s*TL)" }, "robotsCheckedAt": null }
+      }
+    },
+    {
+      "id": "mubi",
+      "regions": {
+        "tr": { "url": "https://mubi.com/tr/memberships", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "main", "pattern": "(₺[\\d.,]+|[\\d.,]+\\s*TL)" }, "robotsCheckedAt": null },
+        "us": { "url": "https://mubi.com/en/memberships", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "main", "pattern": "(\\$[\\d.,]+)" }, "robotsCheckedAt": null }
+      }
+    },
+    {
+      "id": "gain",
+      "regions": {
+        "tr": { "url": "https://gain.tv/uyelik", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "body", "pattern": "(₺[\\d.,]+|[\\d.,]+\\s*TL)" }, "robotsCheckedAt": null }
+      }
+    },
+    {
+      "id": "tabii",
+      "regions": {
+        "tr": { "url": "https://www.tabii.com/tr/packages", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "body", "pattern": "(₺[\\d.,]+|[\\d.,]+\\s*TL)" }, "robotsCheckedAt": null }
+      }
+    },
+    {
+      "id": "storytel",
+      "regions": {
+        "tr": { "url": "https://www.storytel.com/tr/abonelikler", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "main", "pattern": "(₺[\\d.,]+|[\\d.,]+\\s*TL)" }, "robotsCheckedAt": null }
+      }
+    }
+  ]
+}

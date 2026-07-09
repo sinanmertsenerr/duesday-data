@@ -1,0 +1,74 @@
+# Fiyat taraması: cron → scrape → diff → otomatik PR (insan merge eder).
+# Güvenlik: yalnız cron/manuel tetik (fork-PR yüzeyi yok), izinler dar,
+# eşzamanlı koşu kuyruklanır (impact: failure-modes §3.2, §3.4, §3.6).
+name: price-scrape
+
+on:
+  schedule:
+    - cron: '0 4 * * *' # 04:00 UTC = 07:00 TR — düşük trafik penceresi
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: price-scrape
+  cancel-in-progress: false
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # 0-5 dk rastgele jitter: tüm hedeflere aynı saniyede istek atmayı
+      # ve GitHub'ın cron yığılma pencerelerini yumuşatır.
+      - name: Jitter
+        run: sleep $((RANDOM % 300))
+
+      - run: npm ci
+
+      - name: Testler (scrape öncesi kapı)
+        run: npm test
+
+      - name: Scrape + diff
+        id: scrape
+        run: node scraper/index.js
+
+      - name: PR aç / güncelle
+        if: steps.scrape.outputs.has_updates == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          # Sabit branch = idempotent: önceki PR açıkken yeni diff gelirse
+          # aynı PR güncellenir, ikinci PR açılmaz (failure-modes §3.3).
+          branch: automated/price-updates
+          commit-message: 'Fiyat güncellemesi (otomatik tarama)'
+          title: 'Fiyat güncellemesi — otomatik tarama'
+          body-path: .scrape-out/report.md
+          labels: price-change
+          add-paths: |
+            catalog.json
+            changes/latest.json
+
+      # Karantina/anomali/hata insan gözüne issue olarak düşer — sessiz
+      # yutma yok (anayasa §9 ruhu CI'da da geçerli).
+      - name: Anomali/karantina issue'su
+        if: steps.scrape.outputs.run_anomaly == 'true' || steps.scrape.outputs.has_quarantine == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TITLE="Scraper dikkat: $(date -u +%F) koşusunda anomali/karantina"
+          EXISTING=$(gh issue list --label scraper-alert --state open --json number --jq '.[0].number')
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --body-file .scrape-out/report.md
+          else
+            gh issue create --title "$TITLE" --label scraper-alert --body-file .scrape-out/report.md
+          fi

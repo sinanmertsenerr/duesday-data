@@ -1,0 +1,43 @@
+# catalog.json main'e her merge olduğunda fiyat geçmişini git log'dan
+# yeniden üretir ve history.json'u main'e commit'ler. paths filtresi
+# catalog.json'a bakar; bu job yalnız history.json'a dokunur → kendini
+# tetikleme döngüsü yok (impact: cross-surface §4).
+name: history
+
+on:
+  push:
+    branches: [main]
+    paths: [catalog.json]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: history
+  cancel-in-progress: true
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # git log'un tamamı gerekli
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node scraper/bin/regenerate-history.js
+      - name: history.json commit
+        run: |
+          if git diff --quiet history.json; then
+            echo "history değişmedi"
+            exit 0
+          fi
+          git config user.name "duesday-bot"
+          git config user.email "actions@github.com"
+          git add history.json
+          git commit -m "history.json regenerate (otomatik)"
+          git push

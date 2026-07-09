@@ -1,0 +1,104 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { test } from 'node:test';
+
+import { runScrape } from '../scraper/index.js';
+import { buildPrBody } from '../scraper/lib/prbody.js';
+import { computeDiff } from '../scraper/lib/diff.js';
+
+const fixturesDir = join(dirname(fileURLToPath(import.meta.url)), 'fixtures');
+const cssPage = readFileSync(join(fixturesDir, 'css-page.html'), 'utf8');
+
+const catalog = {
+  schemaVersion: 1,
+  generatedAt: '2026-07-01',
+  services: [
+    {
+      id: 'svc-a',
+      name: 'A',
+      category: 'streaming',
+      prices: { tr: { minorUnits: 119999, currency: 'TRY' } },
+    },
+    {
+      id: 'svc-b',
+      name: 'B',
+      category: 'music',
+      prices: { tr: { minorUnits: 5999, currency: 'TRY' } },
+    },
+  ],
+};
+
+const config = {
+  services: [
+    {
+      id: 'svc-a',
+      regions: {
+        tr: {
+          url: 'https://a.example/fiyat',
+          locale: 'tr-TR',
+          expectedCurrency: 'TRY',
+          css: { selector: '.plan .price' },
+        },
+      },
+    },
+    {
+      id: 'svc-b',
+      regions: {
+        tr: {
+          url: 'https://b.example/fiyat',
+          locale: 'tr-TR',
+          expectedCurrency: 'TRY',
+          css: { selector: '.price' },
+        },
+        us: {
+          url: 'https://b.example/pricing',
+          locale: 'en-US',
+          expectedCurrency: 'USD',
+          css: { selector: '.price' },
+          enabled: false,
+        },
+      },
+    },
+  ],
+};
+
+test('DoD: bir servis kırılınca diğerleri ETKİLENMEZ; hata rapora düşer', async () => {
+  const fetcher = async (url) => {
+    if (url.startsWith('https://a.example')) return cssPage;
+    throw new Error('HTTP 403 — bot koruması');
+  };
+  const { scraped, failures, attempted } = await runScrape(catalog, config, fetcher);
+  assert.equal(attempted, 2); // us enabled:false sayılmaz
+  assert.equal(scraped.length, 1);
+  assert.equal(scraped[0].id, 'svc-a');
+  assert.equal(scraped[0].minorUnits, 129999);
+  assert.equal(failures.length, 1);
+  assert.equal(failures[0].id, 'svc-b');
+  assert.match(failures[0].error, /403/);
+});
+
+test('enabled:false bölgeler hiç denenmez', async () => {
+  let calls = 0;
+  const fetcher = async () => {
+    calls += 1;
+    return cssPage;
+  };
+  await runScrape(catalog, config, fetcher);
+  assert.equal(calls, 2);
+});
+
+test('DoD (sahte değişiklik provası): scrape→diff→PR gövdesi zinciri uçtan uca', async () => {
+  const fetcher = async () => cssPage; // her servis ₺1.299,99 okur
+  const { scraped, failures, attempted } = await runScrape(catalog, config, fetcher);
+  const diff = computeDiff(catalog, scraped);
+  // svc-a: 119999→129999 = %8.3 normal update; svc-b: 5999→129999 = 21x karantina.
+  assert.equal(diff.updates.length, 1);
+  assert.equal(diff.quarantined.length, 1);
+  const body = buildPrBody(diff, failures, { attempted, today: '2026-07-09' });
+  assert.match(body, /svc-a/);
+  assert.match(body, /Karantina/);
+  assert.match(body, /kaynak\]\(https:\/\/a\.example\/fiyat\)/);
+  assert.match(body, /%8\.3/);
+});

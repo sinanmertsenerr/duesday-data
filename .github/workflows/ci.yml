@@ -1,0 +1,27 @@
+# CI kapısı: her PR'da testler + catalog.json şema doğrulaması.
+# Scraper'ın (veya insanın) bozuk katalog merge etmesini engeller —
+# app tarafındaki parse-önce-yaz disiplininin repo-tarafı aynası.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: catalog.json şema doğrulaması
+        run: node scraper/bin/validate-catalog.js catalog.json
