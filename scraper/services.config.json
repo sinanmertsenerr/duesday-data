@@ -1,103 +1,103 @@
 {
-  "_comment": "İlk 15 servis (SPEC M5). id'ler catalog.json ile birebir — scraper id ÜRETMEZ. Her bölge: url + locale + expectedCurrency sabittir; kaynaktan tahmin yasak. css.selector/pattern ilk canlı koşuda servis-servis kalibre edilir — kırık selector o servisi izole düşürür, hattı durdurmaz. robots: elle kontrol tarihi.",
+  "_comment": "İlk 15 servis (SPEC M5). id'ler catalog.json ile birebir — scraper id ÜRETMEZ. Her bölge: url + locale + expectedCurrency sabittir (locale = fiyat METNİNİN yazım biçimi, sayfa dili değil — storytel ₺329.99 nokta-ondalık yazar, locale en-US!). Pattern'ler 2026-07-09'da canlı sayfaların cheerio .text() çıktısı üstünde doğrulandı; robotsCheckedAt = robots.txt elle kontrol tarihi. enabled:false nedenleri _note'ta. US bölgeleri TR IP'den tam doğrulanamadı (geo-IP) — çapraz kur kontrolü yanlış veriyi fail-closed düşürür, ilk canlı koşu izlenmeli.",
   "services": [
     {
       "id": "netflix",
       "regions": {
-        "tr": { "url": "https://help.netflix.com/tr/node/24926", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "article", "pattern": "Standart[^₺]*(₺[\\d.,]+)" }, "robotsCheckedAt": null },
-        "us": { "url": "https://help.netflix.com/en/node/24926", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "article", "pattern": "Standard[^$]*(\\$[\\d.,]+)" }, "robotsCheckedAt": null }
+        "tr": { "url": "https://help.netflix.com/tr/node/24926", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "body", "pattern": "Standart plan aylık ([\\d.,]+\\s*TL)" }, "robotsCheckedAt": "2026-07-09", "_note": "help-center içeriği geo-IP seçimli: US runner'dan TR fiyatı gelmeyebilir → kur kontrolü fail-closed düşürür (bilinen sınır)" },
+        "us": { "url": "https://help.netflix.com/en/node/24926", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "body", "pattern": "Standard: ([\\d.,]+\\s*USD)" }, "robotsCheckedAt": "2026-07-09" }
       }
     },
     {
       "id": "spotify",
       "regions": {
-        "tr": { "url": "https://www.spotify.com/tr-tr/premium/", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "[data-testid*=individual], main", "pattern": "(₺[\\d.,]+|[\\d.,]+\\s*TL)" }, "robotsCheckedAt": null },
-        "us": { "url": "https://www.spotify.com/us/premium/", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "[data-testid*=individual], main", "pattern": "(\\$[\\d.,]+)" }, "robotsCheckedAt": null }
+        "tr": { "url": "https://www.spotify.com/tr-tr/premium/", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "main", "pattern": "Bireysel planı\\s*/ay\\s*(₺\\d+(?:,\\d{1,2})?)" }, "robotsCheckedAt": "2026-07-09" },
+        "us": { "url": "https://www.spotify.com/us/premium/", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "main", "pattern": "Individual only\\. \\$0 for 1 month, then (\\$[\\d.,]+) per month" }, "robotsCheckedAt": "2026-07-09" }
       }
     },
     {
       "id": "youtube-premium",
       "regions": {
-        "tr": { "url": "https://www.youtube.com/premium", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "body", "pattern": "(₺[\\d.,]+|[\\d.,]+\\s*TL)" }, "robotsCheckedAt": null, "enabled": false, "_note": "geo-IP bağımlı; TR fiyatı US runner'dan güvenilir çekilemiyor — Playwright/proxy kararına kadar kapalı" },
-        "us": { "url": "https://www.youtube.com/premium", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "body", "pattern": "(\\$[\\d.,]+)" }, "robotsCheckedAt": null }
+        "tr": { "url": "https://www.youtube.com/premium", "locale": "tr-TR", "expectedCurrency": "TRY", "enabled": false, "_note": "SPA + geo-IP; fiyat statik HTML'de yok — Playwright/proxy kararına kadar kapalı" },
+        "us": { "url": "https://www.youtube.com/premium", "locale": "en-US", "expectedCurrency": "USD", "enabled": false, "_note": "SPA; statik HTML'de tek $ karakteri bile yok, fiyat XHR ile geliyor" }
       }
     },
     {
       "id": "apple-music",
       "regions": {
-        "tr": { "url": "https://www.apple.com/tr/apple-music/", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "main", "pattern": "(₺[\\d.,]+|[\\d.,]+\\s*TL)" }, "robotsCheckedAt": null },
-        "us": { "url": "https://www.apple.com/apple-music/", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "main", "pattern": "(\\$[\\d.,]+)" }, "robotsCheckedAt": null }
+        "tr": { "url": "https://www.apple.com/tr/apple-music/", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "main", "pattern": "(₺[\\d.,]+|[\\d.,]+\\s*TL)" }, "robotsCheckedAt": "2026-07-09" },
+        "us": { "url": "https://www.apple.com/apple-music/", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "main", "pattern": "(\\$[\\d.,]+)" }, "robotsCheckedAt": "2026-07-09" }
       }
     },
     {
       "id": "apple-icloud",
       "regions": {
-        "tr": { "url": "https://support.apple.com/tr-tr/108047", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "#sections", "pattern": "50\\s*GB[^₺]*(₺[\\d.,]+|[\\d.,]+\\s*TL)" }, "robotsCheckedAt": null },
-        "us": { "url": "https://support.apple.com/en-us/108047", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "#sections", "pattern": "50\\s*GB[^$]*(\\$[\\d.,]+)" }, "robotsCheckedAt": null }
+        "tr": { "url": "https://support.apple.com/tr-tr/108047", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "#sections", "pattern": "50\\s*GB\\D*?([\\d.,]+\\s*TL)" }, "robotsCheckedAt": "2026-07-09" },
+        "us": { "url": "https://support.apple.com/en-us/108047", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "#sections", "pattern": "United States[\\s\\S]{0,300}?50\\s*GB[^$]*(\\$\\d+\\.\\d{2})" }, "robotsCheckedAt": "2026-07-09", "_note": "sayfa TÜM ülkelerin fiyatını içerir — ülke çapası + tam 2 ondalık şart ($0.99200 bug'ı)" }
       }
     },
     {
       "id": "amazon-prime",
       "regions": {
-        "tr": { "url": "https://www.amazon.com.tr/amazonprime", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "body", "pattern": "(₺[\\d.,]+|[\\d.,]+\\s*TL)" }, "robotsCheckedAt": null },
-        "us": { "url": "https://www.amazon.com/amazonprime", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "body", "pattern": "(\\$[\\d.,]+)" }, "robotsCheckedAt": null }
+        "tr": { "url": "https://www.amazon.com.tr/amazonprime", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "p[data-prime-customer-name-field].a-size-base", "pattern": "([\\d.,]+\\s*₺)" }, "robotsCheckedAt": "2026-07-09", "_note": "para birimi sayının SONUNDA (69,90₺); Amazon bot koruması IP-itibar duyarlı, tutarsız 429/503 normal" },
+        "us": { "url": "https://www.amazon.com/amazonprime", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "div[data-index=\"1\"]", "pattern": "(\\$[\\d.,]+)" }, "robotsCheckedAt": "2026-07-09" }
       }
     },
     {
       "id": "disney-plus",
       "regions": {
-        "tr": { "url": "https://www.disneyplus.com/tr-tr", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "main", "pattern": "(₺[\\d.,]+|[\\d.,]+\\s*TL)" }, "robotsCheckedAt": null },
-        "us": { "url": "https://www.disneyplus.com/", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "main", "pattern": "(\\$[\\d.,]+)" }, "robotsCheckedAt": null }
+        "tr": { "url": "https://www.disneyplus.com/tr-tr", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "main", "pattern": "(₺[\\d.,]+|[\\d.,]+\\s*TL)" }, "robotsCheckedAt": "2026-07-09" },
+        "us": { "url": "https://www.disneyplus.com/", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "main", "pattern": "(\\$[\\d.,]+)" }, "robotsCheckedAt": "2026-07-09" }
       }
     },
     {
       "id": "hbo-max",
       "regions": {
-        "tr": { "url": "https://www.hbomax.com/tr/tr", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "main", "pattern": "(₺[\\d.,]+|[\\d.,]+\\s*TL)" }, "robotsCheckedAt": null },
-        "us": { "url": "https://www.hbomax.com/", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "main", "pattern": "(\\$[\\d.,]+)" }, "robotsCheckedAt": null }
+        "tr": { "url": "https://www.hbomax.com/tr/tr", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "main", "pattern": "Standart\\s*\\(([\\d.,]+\\s*TL)\\/ay" }, "robotsCheckedAt": "2026-07-09" },
+        "us": { "url": "https://www.hbomax.com/", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "main", "pattern": "Basic With Ads - (\\$[\\d.,]+)/month" }, "robotsCheckedAt": "2026-07-09", "_note": "hero'daki 'Starting at $6.58' yıllık-peşin teaser'ı — footer legal metnindeki liste fiyatı hedeflenir" }
       }
     },
     {
       "id": "exxen",
       "regions": {
-        "tr": { "url": "https://www.exxen.com/tr/paketler", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "body", "pattern": "(₺[\\d.,]+|[\\d.,]+\\s*TL)" }, "robotsCheckedAt": null }
+        "tr": { "url": "https://www.exxen.com/tr/paketler", "locale": "tr-TR", "expectedCurrency": "TRY", "enabled": false, "_note": "JS-render (RSC stream) — fiyat statik HTML'de yok, hydrate sonrası API'den geliyor" }
       }
     },
     {
       "id": "bein-connect",
       "regions": {
-        "tr": { "url": "https://www.beinconnect.com.tr/paketler", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "body", "pattern": "(₺[\\d.,]+|[\\d.,]+\\s*TL)" }, "robotsCheckedAt": null }
+        "tr": { "url": "https://www.beinconnect.com.tr/paketler", "locale": "tr-TR", "expectedCurrency": "TRY", "enabled": false, "_note": "Akamai bot duvarı ('Request Rejected') — tüm path'lerde" }
       }
     },
     {
       "id": "tod",
       "regions": {
-        "tr": { "url": "https://www.todtv.com.tr/paketler", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "body", "pattern": "(₺[\\d.,]+|[\\d.,]+\\s*TL)" }, "robotsCheckedAt": null }
+        "tr": { "url": "https://www.todtv.com.tr/paketler", "locale": "tr-TR", "expectedCurrency": "TRY", "enabled": false, "_note": "Akamai bot duvarı — tüm path'lerde" }
       }
     },
     {
       "id": "mubi",
       "regions": {
-        "tr": { "url": "https://mubi.com/tr/memberships", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "main", "pattern": "(₺[\\d.,]+|[\\d.,]+\\s*TL)" }, "robotsCheckedAt": null },
-        "us": { "url": "https://mubi.com/en/memberships", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "main", "pattern": "(\\$[\\d.,]+)" }, "robotsCheckedAt": null }
+        "tr": { "url": "https://mubi.com/tr/memberships", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "#__NEXT_DATA__", "pattern": "\"month\":\\{[^}]*?\"price\":\"(₺[\\d.,]+)\"" }, "robotsCheckedAt": "2026-07-09", "_note": "fiyat __NEXT_DATA__ JSON'unda — CSS hash'lerinden daha stabil" },
+        "us": { "url": "https://mubi.com/en/memberships", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "#__NEXT_DATA__", "pattern": "\"month\":\\{[^}]*?\"price\":\"(\\$[\\d.,]+)\"" }, "robotsCheckedAt": "2026-07-09", "_note": "para birimi IP'den seçiliyor — US runner'dan USD beklenir, TR IP'den doğrulanamadı" }
       }
     },
     {
       "id": "gain",
       "regions": {
-        "tr": { "url": "https://gain.tv/uyelik", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "body", "pattern": "(₺[\\d.,]+|[\\d.,]+\\s*TL)" }, "robotsCheckedAt": null }
+        "tr": { "url": "https://gain.tv/", "locale": "tr-TR", "expectedCurrency": "TRY", "enabled": false, "_note": "fiyatlandırma sayfası yok (404); ana sayfadaki tek fiyat 'ilk 3 ay' kampanyası" }
       }
     },
     {
       "id": "tabii",
       "regions": {
-        "tr": { "url": "https://www.tabii.com/tr/packages", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "body", "pattern": "(₺[\\d.,]+|[\\d.,]+\\s*TL)" }, "robotsCheckedAt": null }
+        "tr": { "url": "https://www.tabii.com/tr", "locale": "tr-TR", "expectedCurrency": "TRY", "enabled": false, "_note": "JS-render; statik HTML'de fiyat da nav linki de yok" }
       }
     },
     {
       "id": "storytel",
       "regions": {
-        "tr": { "url": "https://www.storytel.com/tr/abonelikler", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "main", "pattern": "(₺[\\d.,]+|[\\d.,]+\\s*TL)" }, "robotsCheckedAt": null }
+        "tr": { "url": "https://www.storytel.com/tr", "locale": "en-US", "expectedCurrency": "TRY", "css": { "selector": "[class*=defaultPrice]", "pattern": "(₺[\\d.,]+)" }, "robotsCheckedAt": "2026-07-09", "_note": "DİKKAT: sayfa ₺329.99 NOKTA-ondalık yazar → locale en-US (yoksa 100x hata); kur yine TRY" }
       }
     }
   ]

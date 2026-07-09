@@ -4,7 +4,7 @@
 // tarayıcı UA taklidi yok (research §7).
 
 export const USER_AGENT =
-  'Duesday-PriceBot/1.0 (+https://github.com/sinansener/duesday-data)';
+  'Duesday-PriceBot/1.0 (+https://github.com/sinanmertsenerr/duesday-data)';
 
 export class FetchError extends Error {
   constructor(message, { status } = {}) {
