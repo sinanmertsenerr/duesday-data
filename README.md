@@ -23,8 +23,10 @@ Cloudflare Pages üzerinden statik CDN olarak yayınlanır.
    değiştiyse **koşu anomalisi** → PR hiç açılmaz, issue açılır.
 4. Temiz değişiklikler `catalog.json`'a uygulanır, üretilen dosya app-parser
    kurallarıyla **yerel doğrulanır** (geçmezse PR yok, workflow kırmızı).
-5. `automated/price-updates` branch'ine **idempotent PR** açılır/güncellenir —
-   gövdede kaynak link + eski→yeni + %değişim tablosu. **İnsan merge eder.**
+5. `automated/price-updates` branch'ine **idempotent PR** açılır ve sanity'den
+   geçtiği için **otomatik merge edilir** (tam otomatik mod). Karantina/anomali
+   asla otomatik yayınlanmaz — issue olarak insana düşer, insan onaylamadıkça
+   kullanıcıya gitmez. PR audit izi olarak durur (kaynak link + eski→yeni tablo).
 6. Merge → Cloudflare Pages otomatik deploy → app ETag değişimini görür.
    `history` workflow'u `history.json`'u git log'dan yeniden üretip commit'ler.
 

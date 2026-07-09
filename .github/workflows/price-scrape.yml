@@ -59,6 +59,7 @@ jobs:
       # önceki validateCatalog kapısı. ci.yml PR'da da koşsun istenirse
       # `token:` alanına PAT verilmeli.
       - name: PR aç / güncelle
+        id: pr
         if: steps.scrape.outputs.has_updates == 'true'
         uses: peter-evans/create-pull-request@v7
         with:
@@ -72,6 +73,38 @@ jobs:
           add-paths: |
             catalog.json
             changes/latest.json
+
+      # TAM OTOMATİK MOD (kullanıcı kararı 2026-07-09): sanity + validasyon
+      # + kur kontrolünden geçen PR insan beklemeden merge edilir. Karantina/
+      # anomali PR'a zaten giremez — onlar issue olarak insana düşer.
+      # NOT: GITHUB_TOKEN merge'i history.yml'i TETİKLEMEZ (GitHub kuralı),
+      # bu yüzden history burada inline yenilenir.
+      - name: Otomatik merge + history
+        if: steps.scrape.outputs.has_updates == 'true' && steps.pr.outputs.pull-request-number != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ steps.pr.outputs.pull-request-number }}
+        run: |
+          # Mergeable durumu birkaç saniye gecikebilir — kısa retry.
+          for i in 1 2 3 4 5; do
+            if gh pr merge "$PR_NUMBER" --squash --delete-branch; then
+              MERGED=1; break
+            fi
+            sleep 10
+          done
+          if [ -z "$MERGED" ]; then
+            echo "::error::Otomatik merge başarısız — PR #$PR_NUMBER insan onayı bekliyor"
+            exit 1
+          fi
+          git fetch origin main && git checkout main && git pull --ff-only
+          node scraper/bin/regenerate-history.js
+          if ! git diff --quiet history.json; then
+            git config user.name "duesday-bot"
+            git config user.email "actions@github.com"
+            git add history.json
+            git commit -m "history.json regenerate (otomatik)"
+            git push origin main
+          fi
 
       # Karantina/anomali/hata insan gözüne issue olarak düşer — sessiz
       # yutma yok (anayasa §9 ruhu CI'da da geçerli).
