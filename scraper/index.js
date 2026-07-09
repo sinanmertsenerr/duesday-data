@@ -45,6 +45,16 @@ export async function runScrape(catalog, config, fetcher, { staggerMs = 0 } = {}
           acceptLanguage: rc.locale === 'tr-TR' ? 'tr-TR,tr;q=0.9' : 'en-US,en;q=0.9',
         });
         const minorUnits = extractPrice(html, rc);
+        // Servis-başına beklenen aralık: promo/A-B varyantları hangi
+        // kılıkta gelirse gelsin aralık dışı okuma diff'e giremez.
+        if (rc.expectedRange) {
+          const [min, max] = rc.expectedRange;
+          if (minorUnits < min || minorUnits > max) {
+            throw new Error(
+              `beklenen aralık dışı: ${minorUnits} ∉ [${min}, ${max}] (promo/yanlış okuma?)`,
+            );
+          }
+        }
         scraped.push({
           id: service.id,
           region,

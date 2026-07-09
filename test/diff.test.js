@@ -76,11 +76,17 @@ test('sanity ALT eşik: %60 üstü düşüş de karantinaya (format hatası siny
   assert.equal(d.quarantined.length, 1);
 });
 
-test('eşik SINIRLARI: tam 4.0x ve tam 0.4x karantinaya GİRMEZ (> / < katı)', () => {
+test('eşik SINIRLARI: tam 4.0x ve tam 0.55x karantinaya GİRMEZ (> / < katı)', () => {
   const up = computeDiff(catalog(), [item('spotify', 'tr', 5999 * 4)]);
   assert.equal(up.updates.length, 1);
-  const down = computeDiff(catalog(), [item('exxen', 'tr', 5200)]);
+  const down = computeDiff(catalog(), [item('exxen', 'tr', 7150)]); // 0.55x
   assert.equal(down.updates.length, 1);
+});
+
+test('%50 düşüş (promo sınıfı) artık karantinaya düşer — tam otomatik mod emniyeti', () => {
+  const d = computeDiff(catalog(), [item('exxen', 'tr', 6500)]); // 0.5x
+  assert.equal(d.updates.length, 0);
+  assert.equal(d.quarantined.length, 1);
 });
 
 test('kur değişimi karantinaya (tr bölgesine USD gelemez)', () => {

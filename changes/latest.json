@@ -1,14 +1,5 @@
 {
   "schemaVersion": 1,
-  "changedAt": "2026-07-09",
-  "changes": [
-    {
-      "id": "storytel",
-      "region": "tr",
-      "oldMinorUnits": 32999,
-      "newMinorUnits": 16499,
-      "currency": "TRY",
-      "sourceUrl": "https://www.storytel.com/tr"
-    }
-  ]
+  "changedAt": null,
+  "changes": []
 }

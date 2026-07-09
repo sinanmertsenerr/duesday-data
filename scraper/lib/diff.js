@@ -5,7 +5,9 @@
 //    sistemik hata (şablon değişimi) varsayılır, otomatik PR açılmaz.
 
 export const QUARANTINE_UPPER_RATIO = 4.0; // > %300 artış
-export const QUARANTINE_LOWER_RATIO = 0.4; // > %60 düşüş
+// Tam otomatik modda alt eşik sıkı: %45+ düşüş neredeyse her zaman
+// promo/indirim yakalamasıdır (storytel PR #3/#4 vakaları) — insana düşer.
+export const QUARANTINE_LOWER_RATIO = 0.55;
 export const RUN_ANOMALY_CHANGED_FRACTION = 0.5;
 export const RUN_ANOMALY_MIN_SAMPLES = 4;
 // Gürültü eşiği: kuruş oynamaları PR yorgunluğu yaratır (failure-modes §5.3).

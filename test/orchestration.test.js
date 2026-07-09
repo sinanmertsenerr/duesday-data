@@ -79,6 +79,16 @@ test('DoD: bir servis kırılınca diğerleri ETKİLENMEZ; hata rapora düşer',
   assert.match(failures[0].error, /403/);
 });
 
+test('expectedRange dışı okuma diff\'e giremez, hata olarak rapora düşer', async () => {
+  const cfg = structuredClone(config);
+  cfg.services[0].regions.tr.expectedRange = [200000, 400000]; // sayfa 129999 okuyacak
+  const fetcher = async () => cssPage;
+  const { scraped, failures } = await runScrape(catalog, cfg, fetcher);
+  assert.equal(scraped.filter((s) => s.id === 'svc-a').length, 0);
+  const f = failures.find((x) => x.id === 'svc-a');
+  assert.match(f.error, /aralık dışı/);
+});
+
 test('enabled:false bölgeler hiç denenmez', async () => {
   let calls = 0;
   const fetcher = async () => {
