@@ -25,3 +25,8 @@ jobs:
       - run: npm test
       - name: catalog.json şema doğrulaması
         run: node scraper/bin/validate-catalog.js catalog.json
+      # Bilgi amaçlı, MERGE'İ BLOKLAMAZ: taban fiyat ↔ plan fiyatı ayrışması
+      # (scraper tabanı günceller, plans M8b'ye kadar manuel — bayatlama
+      # sessiz kalmasın; M8a impact kararı: hard-error değil görünürlük).
+      - name: plan-drift kontrolü (bilgi)
+        run: node scraper/bin/check-plan-drift.js catalog.json

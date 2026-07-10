@@ -2,6 +2,11 @@
 // artı app'in DOĞRULAMADIĞI sıkı kurallar (impact: contract-walk):
 // app currency'yi yalnız length==3 ile kontrol eder, ISO whitelist ve
 // bölge-kur tutarlılığı scraper'ın sorumluluğundadır.
+//
+// plans[].prices AYLIK varsayılır (app radar'ı aylık kıyaslar) — yıllık-only
+// plan fiyatı GİRİLMEZ; validate bunu sayıdan YAKALAYAMAZ, insan kuralıdır
+// (M8a veri girişi sözleşmesi). Plan fiyatları M8b'ye kadar manueldir;
+// scraper plans'ı korur ama güncellemez (diff.js applyUpdates spread).
 
 export const SUPPORTED_SCHEMA_VERSION = 1;
 
@@ -68,40 +73,93 @@ export function validateCatalog(catalog) {
     if (svc.brandColor !== undefined && !HEX_COLOR.test(svc.brandColor)) {
       errors.push(`${where}: brandColor #RRGGBB değil`);
     }
+    validatePlans(where, svc.plans, errors);
     if (svc.prices === undefined) return; // prices opsiyonel (app toleranslı)
     if (svc.prices === null || typeof svc.prices !== 'object' || Array.isArray(svc.prices)) {
       errors.push(`${where}: prices obje değil`);
       return;
     }
-    for (const [region, price] of Object.entries(svc.prices)) {
-      const expected = REGION_CURRENCY[region];
-      if (!expected) {
-        errors.push(`${where}: bilinmeyen bölge '${region}'`);
-        continue;
-      }
-      if (price === null || typeof price !== 'object') {
-        errors.push(`${where}.prices.${region}: obje değil`);
-        continue;
-      }
-      // App float minorUnits'i sessizce düşürür (is! int) — sessiz veri
-      // kaybı yerine burada hata (impact: failure-modes §4.2).
-      if (!Number.isInteger(price.minorUnits)) {
-        errors.push(`${where}.prices.${region}: minorUnits int değil`);
-      } else if (price.minorUnits <= 0 || price.minorUnits > MINOR_UNITS_MAX) {
-        errors.push(
-          `${where}.prices.${region}: minorUnits aralık dışı (${price.minorUnits})`,
-        );
-      }
-      if (price.currency !== expected) {
-        // tr bölgesine USD yazmak TR kullanıcısına yanlış bütçe gösterir;
-        // app bunu YAKALAMAZ (impact: failure-modes §4.3).
-        errors.push(
-          `${where}.prices.${region}: currency '${price.currency}' != beklenen '${expected}'`,
-        );
-      }
-    }
+    validatePrices(where, svc.prices, errors);
   });
   return errors;
+}
+
+// prices haritası kuralları — hem servis tabanı hem plan fiyatları için
+// AYNI sözleşme (M8a impact: plans validasyonu base ile simetrik olmalı).
+function validatePrices(where, prices, errors) {
+  for (const [region, price] of Object.entries(prices)) {
+    const expected = REGION_CURRENCY[region];
+    if (!expected) {
+      errors.push(`${where}: bilinmeyen bölge '${region}'`);
+      continue;
+    }
+    if (price === null || typeof price !== 'object') {
+      errors.push(`${where}.prices.${region}: obje değil`);
+      continue;
+    }
+    // App float minorUnits'i sessizce düşürür (is! int) — sessiz veri
+    // kaybı yerine burada hata (impact: failure-modes §4.2).
+    if (!Number.isInteger(price.minorUnits)) {
+      errors.push(`${where}.prices.${region}: minorUnits int değil`);
+    } else if (price.minorUnits <= 0 || price.minorUnits > MINOR_UNITS_MAX) {
+      errors.push(
+        `${where}.prices.${region}: minorUnits aralık dışı (${price.minorUnits})`,
+      );
+    }
+    if (price.currency !== expected) {
+      // tr bölgesine USD yazmak TR kullanıcısına yanlış bütçe gösterir;
+      // app bunu YAKALAMAZ (impact: failure-modes §4.3).
+      errors.push(
+        `${where}.prices.${region}: currency '${price.currency}' != beklenen '${expected}'`,
+      );
+    }
+  }
+}
+
+// plans (M8a — additive): app'in sessizce düşüreceği her plan burada
+// isimli hata üretir (CatalogParser._parsePlan aynası). Boş dizi geçerli
+// ("henüz plan girilmedi" ara durumu — 56 servislik manuel süreç).
+function validatePlans(where, plans, errors) {
+  if (plans === undefined) return;
+  if (!Array.isArray(plans)) {
+    errors.push(`${where}: plans dizi değil`);
+    return;
+  }
+  const seenPlanIds = new Set();
+  plans.forEach((plan, pi) => {
+    const pwhere = `${where}.plans[${pi}] (${plan?.id ?? '?'})`;
+    if (plan === null || typeof plan !== 'object' || Array.isArray(plan)) {
+      errors.push(`${pwhere}: obje değil`);
+      return;
+    }
+    if (typeof plan.id !== 'string' || plan.id.trim() === '') {
+      errors.push(`${pwhere}: id zorunlu non-empty string`);
+    } else {
+      if (!/^[a-z0-9-]+$/.test(plan.id)) {
+        errors.push(`${pwhere}: id kebab-case değil`);
+      }
+      // App sentinel'i (Subscription.customPlanSentinel): parser bu id'yi
+      // sessizce atar — gerçek bir plan "Özel seçildi" olarak yorumlanamaz.
+      if (plan.id === 'custom') {
+        errors.push(`${pwhere}: id 'custom' REZERVE (app sentinel'i)`);
+      }
+      if (seenPlanIds.has(plan.id)) {
+        errors.push(`${pwhere}: plan id serviste tekrar ediyor`);
+      }
+      seenPlanIds.add(plan.id);
+    }
+    if (typeof plan.name !== 'string' || plan.name.trim() === '') {
+      errors.push(`${pwhere}: name zorunlu non-empty string`);
+    }
+    if (plan.prices === undefined || plan.prices === null ||
+        typeof plan.prices !== 'object' || Array.isArray(plan.prices) ||
+        Object.keys(plan.prices).length === 0) {
+      // App parser'ı fiyatsız planı atıyor (anlamsız) — burada isimli hata.
+      errors.push(`${pwhere}: prices boş/eksik (fiyatsız plan atılır)`);
+    } else {
+      validatePrices(pwhere, plan.prices, errors);
+    }
+  });
 }
 
 /** history.json şeması: {schemaVersion, generatedAt, series:{id:{region:[{date,minorUnits,currency}]}}} */

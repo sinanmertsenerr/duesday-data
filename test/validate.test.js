@@ -105,3 +105,89 @@ test('history: geçerli/geçersiz şema', () => {
   badCurrency.series.netflix.tr[0].currency = 'USD';
   assert.ok(validateHistory(badCurrency).length > 0);
 });
+
+// ---- plans validasyonu (M8a) ----
+
+const withPlan = (plan) => {
+  const c = base();
+  c.services[0].plans = [plan];
+  return c;
+};
+
+const validPlan = () => ({
+  id: 'temel',
+  name: 'Temel',
+  prices: { tr: { minorUnits: 18999, currency: 'TRY' } },
+});
+
+test('plans: geçerli plan hata üretmez; boş dizi kabul edilir', () => {
+  assert.deepEqual(validateCatalog(withPlan(validPlan())), []);
+  const c = base();
+  c.services[0].plans = [];
+  assert.deepEqual(validateCatalog(c), []);
+});
+
+test('plans: dizi değilse reddedilir', () => {
+  const c = base();
+  c.services[0].plans = { id: 'x' };
+  assert.ok(validateCatalog(c).some((e) => e.includes('plans dizi değil')));
+});
+
+test('plans: boş/eksik id reddedilir', () => {
+  assert.ok(
+    validateCatalog(withPlan({ ...validPlan(), id: '' }))
+      .some((e) => e.includes('id zorunlu')),
+  );
+});
+
+test("plans: custom id REZERVE (app sentinel'i), reddedilir", () => {
+  assert.ok(
+    validateCatalog(withPlan({ ...validPlan(), id: 'custom' }))
+      .some((e) => e.includes('REZERVE')),
+  );
+});
+
+test('plans: kebab-case olmayan id reddedilir', () => {
+  assert.ok(
+    validateCatalog(withPlan({ ...validPlan(), id: 'Max 20x' }))
+      .some((e) => e.includes('kebab-case')),
+  );
+});
+
+test('plans: id serviste tekrar ederse reddedilir', () => {
+  const c = base();
+  c.services[0].plans = [validPlan(), validPlan()];
+  assert.ok(validateCatalog(c).some((e) => e.includes('tekrar ediyor')));
+});
+
+test('plans: name eksikse reddedilir', () => {
+  assert.ok(
+    validateCatalog(withPlan({ ...validPlan(), name: ' ' }))
+      .some((e) => e.includes('name zorunlu')),
+  );
+});
+
+test('plans: fiyatsız plan reddedilir (app zaten atıyordu)', () => {
+  assert.ok(
+    validateCatalog(withPlan({ ...validPlan(), prices: {} }))
+      .some((e) => e.includes('fiyatsız plan')),
+  );
+});
+
+test('plans: prices base ile AYNI kurallara tabi (kur/int/aralık)', () => {
+  assert.ok(
+    validateCatalog(
+      withPlan({ ...validPlan(), prices: { tr: { minorUnits: 18999, currency: 'USD' } } }),
+    ).some((e) => e.includes("currency 'USD'")),
+  );
+  assert.ok(
+    validateCatalog(
+      withPlan({ ...validPlan(), prices: { tr: { minorUnits: 189.99, currency: 'TRY' } } }),
+    ).some((e) => e.includes('int değil')),
+  );
+  assert.ok(
+    validateCatalog(
+      withPlan({ ...validPlan(), prices: { xx: { minorUnits: 100, currency: 'TRY' } } }),
+    ).some((e) => e.includes("bilinmeyen bölge 'xx'")),
+  );
+});
