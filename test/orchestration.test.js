@@ -167,9 +167,9 @@ test('M8b: kırık plan pattern\'i tabanı ve diğer planları DÜŞÜRMEZ; fail
   assert.ok(failures.some((f) => f.plan === 'range-disi' && /aralık dışı/.test(f.error)));
 });
 
-test('M8b: çapraz sanity — plan fiyatı tabanın 20x üstündeyse reddedilir', async () => {
+test('M8b: çapraz sanity — plan fiyatı tabanın 100x üstündeyse reddedilir', async () => {
   const { runScrape } = await import('../scraper/index.js');
-  const html = '<body>Base: $1.00 / month Huge: $99.99 / month</body>';
+  const html = '<body>Base: $1.00 / month Huge: $200.00 / month</body>';
   const config = {
     services: [
       {
@@ -181,7 +181,7 @@ test('M8b: çapraz sanity — plan fiyatı tabanın 20x üstündeyse reddedilir'
             expectedCurrency: 'USD',
             css: { selector: 'body', pattern: 'Base:\\s*(\\$[\\d.,]+)' },
             plans: {
-              huge: { pattern: 'Huge:\\s*(\\$[\\d.,]+)', expectedRange: [100, 100000] },
+              huge: { pattern: 'Huge:\\s*(\\$[\\d.,]+)', expectedRange: [100, 10000000] },
             },
           },
         },

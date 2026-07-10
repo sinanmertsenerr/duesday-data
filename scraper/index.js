@@ -78,9 +78,13 @@ export async function runScrape(catalog, config, fetcher, { staggerMs = 0 } = {}
                 `beklenen aralık dışı: ${planMinor} ∉ [${pmin}, ${pmax}]`,
               );
             }
-            if (planMinor < minorUnits * 0.2 || planMinor > minorUnits * 20) {
+            // Bant geniş (0.05x–100x): asıl bariyer plan-başına ZORUNLU
+            // expectedRange; bu yalnız fahiş yanlış-kart okumasını yakalar.
+            // İlk gerçek koşu dersi (2026-07-10): iCloud 12TB tabanın 60
+            // katı — meşru katman yelpazesi 20x bandını aşıyor.
+            if (planMinor < minorUnits * 0.05 || planMinor > minorUnits * 100) {
               throw new Error(
-                `çapraz sanity: plan ${planMinor} vs taban ${minorUnits} (0.2x–20x dışı)`,
+                `çapraz sanity: plan ${planMinor} vs taban ${minorUnits} (0.05x–100x dışı)`,
               );
             }
             scraped.push({
