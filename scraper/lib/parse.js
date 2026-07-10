@@ -104,9 +104,16 @@ function isTeaserContext(context, priceIdx, priceLen = 0) {
   return true;
 }
 
-function extractFromElementText(fullText, pattern, locale, expectedCurrency) {
+function extractFromElementText(
+  fullText,
+  pattern,
+  locale,
+  expectedCurrency,
+  { anchoredContext = false } = {},
+) {
   let text = fullText.trim();
   let matchIndex = 0;
+  let matchStart = 0;
   if (pattern) {
     const m = text.match(new RegExp(pattern));
     if (!m) throw new ExtractError(`pattern eşleşmedi: '${text.slice(0, 80)}'`);
@@ -116,7 +123,8 @@ function extractFromElementText(fullText, pattern, locale, expectedCurrency) {
     // kartları: "Bireysel...Sonra ayda ₺99") pencere karta değil kart
     // başlığına hizalanıp yanlış teaser reddi üretiyordu. Kaptür konumuna
     // hizala; kaptürsüz pattern'de davranış değişmez.
-    matchIndex = (m.index ?? 0) + m[0].indexOf(captured);
+    matchStart = m.index ?? 0;
+    matchIndex = matchStart + m[0].indexOf(captured);
     text = captured;
   } else {
     // Pattern'sız kullanımda element birden fazla fiyat içeriyorsa (üstü
@@ -131,7 +139,16 @@ function extractFromElementText(fullText, pattern, locale, expectedCurrency) {
   }
   // Teaser kontrolü hem yakalanan metinde hem eşleşmenin BAĞLAMINDA:
   // kampanya kelimesi fiyatın yanında durur, grubun içinde değil.
-  const contextStart = Math.max(0, matchIndex - TEASER_CONTEXT_WINDOW);
+  // anchoredContext (M8b plan pattern'leri): "önce" penceresi pattern'in
+  // KENDİ anchor'ından başlar — komşu kartın hukuk/pazarlama metni
+  // ("...Öğrenci İndirimi Hüküm ve Koşulları" → Duo kartı) bu kartın
+  // teaser'ı değildir. Plan tarafında asıl bariyer zorunlu expectedRange
+  // + diff karantinası; taban pattern'lerinde davranış DEĞİŞMEZ
+  // (storytel promo koruması aynen).
+  const contextStart = Math.max(
+    anchoredContext ? matchStart : 0,
+    matchIndex - TEASER_CONTEXT_WINDOW,
+  );
   const context = fullText.slice(
     contextStart,
     matchIndex + text.length + TEASER_CONTEXT_WINDOW,
@@ -158,7 +175,12 @@ function extractFromElementText(fullText, pattern, locale, expectedCurrency) {
  * geçtiğinde (teaser bağlamıyla reddedilir) sıradaki gerçek fiyat kartı
  * denenir — koşudan koşuya element sırası değişse de sonuç kararlı kalır.
  */
-export function extractFromCss(html, { selector, pattern }, locale, expectedCurrency) {
+export function extractFromCss(
+  html,
+  { selector, pattern, anchoredContext },
+  locale,
+  expectedCurrency,
+) {
   const $ = cheerio.load(html);
   const els = $(selector).toArray().slice(0, MAX_ELEMENT_ATTEMPTS);
   if (els.length === 0) {
@@ -183,7 +205,9 @@ export function extractFromCss(html, { selector, pattern }, locale, expectedCurr
           }
         }
       }
-      return extractFromElementText(elementText, pattern, locale, expectedCurrency);
+      return extractFromElementText(elementText, pattern, locale, expectedCurrency, {
+        anchoredContext: anchoredContext === true,
+      });
     } catch (e) {
       if (!(e instanceof ExtractError) && !(e instanceof MoneyParseError)) throw e;
       errors.push(e.message);

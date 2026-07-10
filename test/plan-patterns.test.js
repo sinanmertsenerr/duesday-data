@@ -43,6 +43,9 @@ const PAGES = {
       'Sonra yalnızca ₺99/ay. İstediğin zaman iptal et.' +
       'PremiumBireyselİlk 1 ay boyunca ücretsizSonra ayda ₺991 Premium hesabı' +
       'PremiumÖğrenciİlk 1 ay boyunca ücretsizSonra ayda ₺55İndirimli fiyat' +
+      // 2026-07-10 GERÇEK koşu varyantı: Öğrenci kartının hukuk metni Duo
+      // fiyatının teaser penceresine giriyordu — anchoredContext bunu çözer.
+      'yararlanamaz. Spotify Öğrenci İndirimi Hüküm ve Koşulları\'na tabidir.' +
       'PremiumDuo₺135 / ay2 Premium hesabıPremiumAile₺165 / ay6 Premium hesabı' +
       'Yinelenen üyeliklerde otomatik ödeme alınır.',
     expected: { bireysel: 9900, duo: 13500, aile: 16500, ogrenci: 5500 },

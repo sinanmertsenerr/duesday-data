@@ -116,13 +116,19 @@ export async function runScrape(catalog, config, fetcher, { staggerMs = 0 } = {}
 
 /** Plan alt-config'ini bölge config'iyle birleştirir (extractPrice girdisi).
  *  Selector verilmezse tabanın selector'ı; jsonLd varsayılan KAPALI
- *  (plan ayrımı metin bazlı — JSON-LD offer eşlemesi plan adı taşımaz). */
+ *  (plan ayrımı metin bazlı — JSON-LD offer eşlemesi plan adı taşımaz).
+ *  anchoredContext: teaser "önce" penceresi pattern anchor'ından başlar —
+ *  komşu kartın metni bu kartın teaser'ı sayılmaz (parse.js açıklaması). */
 export function buildPlanRegionConfig(rc, pc) {
   return {
     locale: rc.locale,
     expectedCurrency: rc.expectedCurrency,
     jsonLd: pc.jsonLd ?? false,
-    css: { selector: pc.selector ?? rc.css?.selector ?? 'body', pattern: pc.pattern },
+    css: {
+      selector: pc.selector ?? rc.css?.selector ?? 'body',
+      pattern: pc.pattern,
+      anchoredContext: true,
+    },
   };
 }
 
