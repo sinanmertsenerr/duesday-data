@@ -162,7 +162,49 @@ function validatePlans(where, plans, errors) {
   });
 }
 
-/** history.json şeması: {schemaVersion, generatedAt, series:{id:{region:[{date,minorUnits,currency}]}}} */
+/** services.config.json plan config'leri (M8b): pattern + expectedRange
+ *  ZORUNLU (storytel PR#3/#4 dersi — kesin bariyer); plan id catalog'da
+ *  o serviste tanımlı olmalı (scraper plan yaratmaz); 'custom' rezerve. */
+export function validateServicesConfig(config, catalog) {
+  const errors = [];
+  const planIdsByService = new Map(
+    (catalog?.services ?? []).map((s) => [
+      s.id,
+      new Set((s.plans ?? []).map((p) => p.id)),
+    ]),
+  );
+  for (const svc of config?.services ?? []) {
+    for (const [region, rc] of Object.entries(svc.regions ?? {})) {
+      for (const [planId, pc] of Object.entries(rc.plans ?? {})) {
+        const where = `${svc.id}/${region}/${planId}`;
+        if (planId === 'custom') {
+          errors.push(`${where}: 'custom' REZERVE (app sentinel'i)`);
+        }
+        if (typeof pc?.pattern !== 'string' || pc.pattern.length === 0) {
+          errors.push(`${where}: pattern zorunlu`);
+        }
+        if (
+          !Array.isArray(pc?.expectedRange) ||
+          pc.expectedRange.length !== 2 ||
+          !Number.isInteger(pc.expectedRange[0]) ||
+          !Number.isInteger(pc.expectedRange[1]) ||
+          pc.expectedRange[0] >= pc.expectedRange[1]
+        ) {
+          errors.push(`${where}: expectedRange [min,max] ZORUNLU (int, min<max)`);
+        }
+        const known = planIdsByService.get(svc.id);
+        if (!known || !known.has(planId)) {
+          errors.push(`${where}: catalog.json'da bu serviste tanımlı değil`);
+        }
+      }
+    }
+  }
+  return errors;
+}
+
+/** history.json şeması: {schemaVersion, generatedAt,
+ *  series:{id:{region:[{date,minorUnits,currency}]}},
+ *  planSeries:{id:{planId:{region:[...]}}} (M8b — additive, opsiyonel)} */
 export function validateHistory(history) {
   const errors = [];
   if (history === null || typeof history !== 'object') return ['kök obje değil'];
@@ -173,33 +215,56 @@ export function validateHistory(history) {
     return errors;
   }
   for (const [id, regions] of Object.entries(history.series)) {
-    for (const [region, points] of Object.entries(regions)) {
-      const expected = REGION_CURRENCY[region];
-      if (!expected) {
-        errors.push(`${id}: bilinmeyen bölge '${region}'`);
-        continue;
-      }
-      if (!Array.isArray(points)) {
-        errors.push(`${id}.${region}: dizi değil`);
-        continue;
-      }
-      let prevDate = '';
-      for (const p of points) {
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(p?.date ?? '')) {
-          errors.push(`${id}.${region}: geçersiz tarih`);
-        } else if (p.date < prevDate) {
-          errors.push(`${id}.${region}: tarihler artan sırada değil`);
-        } else {
-          prevDate = p.date;
+    validateSeriesRegions(id, regions, errors);
+  }
+  if (history.planSeries !== undefined) {
+    if (history.planSeries === null || typeof history.planSeries !== 'object') {
+      errors.push('planSeries obje değil');
+    } else {
+      for (const [id, plans] of Object.entries(history.planSeries)) {
+        if (plans === null || typeof plans !== 'object') {
+          errors.push(`${id}: planSeries girdisi obje değil`);
+          continue;
         }
-        if (!Number.isInteger(p?.minorUnits) || p.minorUnits <= 0) {
-          errors.push(`${id}.${region}: geçersiz minorUnits`);
-        }
-        if (p?.currency !== expected) {
-          errors.push(`${id}.${region}: currency != ${expected}`);
+        for (const [planId, regions] of Object.entries(plans)) {
+          validateSeriesRegions(`${id}#${planId}`, regions, errors);
         }
       }
     }
   }
   return errors;
+}
+
+function validateSeriesRegions(where, regions, errors) {
+  if (regions === null || typeof regions !== 'object') {
+    errors.push(`${where}: bölge haritası obje değil`);
+    return;
+  }
+  for (const [region, points] of Object.entries(regions)) {
+    const expected = REGION_CURRENCY[region];
+    if (!expected) {
+      errors.push(`${where}: bilinmeyen bölge '${region}'`);
+      continue;
+    }
+    if (!Array.isArray(points)) {
+      errors.push(`${where}.${region}: dizi değil`);
+      continue;
+    }
+    let prevDate = '';
+    for (const p of points) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(p?.date ?? '')) {
+        errors.push(`${where}.${region}: geçersiz tarih`);
+      } else if (p.date < prevDate) {
+        errors.push(`${where}.${region}: tarihler artan sırada değil`);
+      } else {
+        prevDate = p.date;
+      }
+      if (!Number.isInteger(p?.minorUnits) || p.minorUnits <= 0) {
+        errors.push(`${where}.${region}: geçersiz minorUnits`);
+      }
+      if (p?.currency !== expected) {
+        errors.push(`${where}.${region}: currency != ${expected}`);
+      }
+    }
+  }
 }

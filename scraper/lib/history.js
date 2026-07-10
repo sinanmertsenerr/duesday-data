@@ -34,6 +34,9 @@ export function listCatalogCommits(repoDir) {
  */
 export function regenerateHistory(repoDir, today) {
   const series = {};
+  // M8b: plan serileri — ayrı üst-anahtar (series semantiği saf kalır;
+  // app'in eski parser'ı bilinmeyen anahtarı okumaz, schemaVersion 1).
+  const planSeries = {};
   for (const { sha, date } of listCatalogCommits(repoDir)) {
     let catalog;
     try {
@@ -43,27 +46,41 @@ export function regenerateHistory(repoDir, today) {
     }
     if (!Array.isArray(catalog?.services)) continue;
     for (const svc of catalog.services) {
-      if (typeof svc?.id !== 'string' || svc.prices == null) continue;
-      for (const [region, price] of Object.entries(svc.prices)) {
-        if (!Number.isInteger(price?.minorUnits) || price.minorUnits <= 0) continue;
-        series[svc.id] ??= {};
-        series[svc.id][region] ??= [];
-        const points = series[svc.id][region];
-        const last = points[points.length - 1];
-        if (
-          last &&
-          last.minorUnits === price.minorUnits &&
-          last.currency === price.currency
-        ) {
-          continue; // değişim yok — nokta ekleme
-        }
-        points.push({
+      if (typeof svc?.id !== 'string') continue;
+      for (const [region, price] of Object.entries(svc.prices ?? {})) {
+        appendChangePoint(
+          ((series[svc.id] ??= {})[region] ??= []),
           date,
-          minorUnits: price.minorUnits,
-          currency: price.currency,
-        });
+          price,
+        );
+      }
+      // M8a-öncesi snapshot'larda plans yok — guard şart.
+      if (!Array.isArray(svc.plans)) continue;
+      for (const plan of svc.plans) {
+        if (typeof plan?.id !== 'string') continue;
+        for (const [region, price] of Object.entries(plan.prices ?? {})) {
+          appendChangePoint(
+            (((planSeries[svc.id] ??= {})[plan.id] ??= {})[region] ??= []),
+            date,
+            price,
+          );
+        }
       }
     }
   }
-  return { schemaVersion: 1, generatedAt: today, series };
+  return { schemaVersion: 1, generatedAt: today, series, planSeries };
+}
+
+/** Yalnız DEĞİŞİM noktası ekler (taban ve plan serilerinde aynı kural). */
+function appendChangePoint(points, date, price) {
+  if (!Number.isInteger(price?.minorUnits) || price.minorUnits <= 0) return;
+  const last = points[points.length - 1];
+  if (
+    last &&
+    last.minorUnits === price.minorUnits &&
+    last.currency === price.currency
+  ) {
+    return;
+  }
+  points.push({ date, minorUnits: price.minorUnits, currency: price.currency });
 }

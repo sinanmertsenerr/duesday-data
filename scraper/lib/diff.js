@@ -34,7 +34,19 @@ export function computeDiff(catalog, scraped) {
       quarantined.push({ ...item, reason: 'katalogda olmayan id' });
       continue;
     }
-    const old = svc.prices?.[item.region];
+    // M8b: plan kaydı — scraper plan YARATMAZ; katalogda olmayan planId
+    // karantinaya (taban 'katalogda olmayan id' kalıbının plan aynası).
+    let old;
+    if (item.planId) {
+      const plan = (svc.plans ?? []).find((p) => p.id === item.planId);
+      if (!plan) {
+        quarantined.push({ ...item, reason: 'katalogda olmayan plan' });
+        continue;
+      }
+      old = plan.prices?.[item.region];
+    } else {
+      old = svc.prices?.[item.region];
+    }
     if (!old) {
       // Yeni bölge fiyatı additive ve app-güvenli, ama otomatik akışa
       // girmez — PR gövdesinde ayrı "YENİ BÖLGE" bölümünde insana sunulur.
@@ -98,11 +110,39 @@ export function applyUpdates(catalog, updates, today) {
     services: catalog.services.map((svc) => {
       const changes = changedByService.get(svc.id);
       if (!changes) return svc;
-      const prices = { ...svc.prices };
-      for (const c of changes) {
-        prices[c.region] = { minorUnits: c.minorUnits, currency: c.currency };
+      const baseChanges = changes.filter((c) => !c.planId);
+      const planChanges = changes.filter((c) => c.planId);
+      // Dokunulmayan alan REFERANS-EŞİT kalır (temiz git diff) — yalnız
+      // plan değiştiyse taban prices objesi kopyalanmaz bile.
+      let prices = svc.prices;
+      if (baseChanges.length > 0) {
+        prices = { ...svc.prices };
+        for (const c of baseChanges) {
+          prices[c.region] = { minorUnits: c.minorUnits, currency: c.currency };
+        }
       }
-      return { ...svc, prices };
+      // M8b: plan fiyatları — dokunulmayan plan objeleri REFERANS-EŞİT
+      // kalır (temiz git diff garantisi taban ile aynı).
+      let plans = svc.plans;
+      if (planChanges.length > 0 && Array.isArray(svc.plans)) {
+        const byPlan = new Map();
+        for (const c of planChanges) {
+          if (!byPlan.has(c.planId)) byPlan.set(c.planId, []);
+          byPlan.get(c.planId).push(c);
+        }
+        plans = svc.plans.map((p) => {
+          const pcs = byPlan.get(p.id);
+          if (!pcs) return p;
+          const pPrices = { ...p.prices };
+          for (const c of pcs) {
+            pPrices[c.region] = { minorUnits: c.minorUnits, currency: c.currency };
+          }
+          return { ...p, prices: pPrices };
+        });
+      }
+      return plans === svc.plans
+        ? { ...svc, prices }
+        : { ...svc, prices, plans };
     }),
   };
 }
@@ -115,6 +155,9 @@ export function buildChangesArtifact(updates, today) {
     changes: updates.map((u) => ({
       id: u.id,
       region: u.region,
+      // M8b: plan kaydı opsiyonel alan taşır — artifact'in tek tüketicisi
+      // send-fcm.js (planName'i katalogdan çözer); eski tüketici yok.
+      ...(u.planId ? { planId: u.planId } : {}),
       oldMinorUnits: u.oldMinorUnits,
       newMinorUnits: u.minorUnits,
       currency: u.currency,

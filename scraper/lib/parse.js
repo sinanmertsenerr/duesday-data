@@ -75,7 +75,7 @@ const PARENT_CONTEXT_WINDOW = 140;
  * 'sonra/then/after' varsa bu deneme-SONRASI gerçek liste fiyatıdır
  * ("İlk 30 günden sonra Prime sadece 69,90₺" — amazon vakası), teaser değil.
  */
-function isTeaserContext(context, priceIdx) {
+function isTeaserContext(context, priceIdx, priceLen = 0) {
   const t = findTeaserIndex(context);
   if (t === -1) return false;
   if (t < priceIdx) {
@@ -85,6 +85,14 @@ function isTeaserContext(context, priceIdx) {
     // Teaser ile bizim fiyat arasında BAŞKA bir fiyat varsa teaser ona
     // aittir ('İLK 4 AY ₺164,99 ... ₺329.99' — 329.99 temiz).
     if (/[₺$]|\bTL\b|\bUSD\b/i.test(between)) return false;
+  } else if (
+    // Simetrik kural (M8b plan kartları): fiyattan SONRAKİ teaser'a
+    // giderken BAŞKA bir fiyat geçiliyorsa teaser o fiyatın kartına
+    // aittir ('Duo₺135/ay ... Aile₺165/ay ... Öğrenci' — Öğrenci,
+    // Duo'nun teaser'ı değil komşu kartın adı).
+    /[₺$]|\bTL\b|\bUSD\b/i.test(context.slice(priceIdx + priceLen, t))
+  ) {
+    return false;
   } else {
     // Teaser fiyattan SONRA: '$14.99 per month after trial' (amazon us) —
     // teaser kelimesinin HEMEN önünde after/then varsa bu deneme-SONRASI
@@ -102,8 +110,14 @@ function extractFromElementText(fullText, pattern, locale, expectedCurrency) {
   if (pattern) {
     const m = text.match(new RegExp(pattern));
     if (!m) throw new ExtractError(`pattern eşleşmedi: '${text.slice(0, 80)}'`);
-    matchIndex = m.index ?? 0;
-    text = m[m.length > 1 ? 1 : 0];
+    const captured = m[m.length > 1 ? 1 : 0];
+    // Teaser penceresi FİYATIN çevresine bakar (aşağıdaki yorumun niyeti).
+    // m.index eşleşmenin BAŞI — kaptürü uzakta olan pattern'lerde (M8b plan
+    // kartları: "Bireysel...Sonra ayda ₺99") pencere karta değil kart
+    // başlığına hizalanıp yanlış teaser reddi üretiyordu. Kaptür konumuna
+    // hizala; kaptürsüz pattern'de davranış değişmez.
+    matchIndex = (m.index ?? 0) + m[0].indexOf(captured);
+    text = captured;
   } else {
     // Pattern'sız kullanımda element birden fazla fiyat içeriyorsa (üstü
     // çizili eski fiyat + indirimli yeni fiyat gibi) rakamlar birbirine
@@ -122,7 +136,10 @@ function extractFromElementText(fullText, pattern, locale, expectedCurrency) {
     contextStart,
     matchIndex + text.length + TEASER_CONTEXT_WINDOW,
   );
-  if (containsTeaser(text) || isTeaserContext(context, matchIndex - contextStart)) {
+  if (
+    containsTeaser(text) ||
+    isTeaserContext(context, matchIndex - contextStart, text.length)
+  ) {
     throw new ExtractError(`teaser/kampanya bağlamı: '${context.trim().slice(0, 80)}'`);
   }
   // Çapraz kur doğrulaması: TR fiyatı bekliyorsak metinde ₺/TL izi olmalı —
@@ -159,7 +176,7 @@ export function extractFromCss(html, { selector, pattern }, locale, expectedCurr
         if (idx !== -1) {
           const start = Math.max(0, idx - PARENT_CONTEXT_WINDOW);
           const window = parentText.slice(start, idx + PARENT_CONTEXT_WINDOW);
-          if (isTeaserContext(window, idx - start)) {
+          if (isTeaserContext(window, idx - start, elementText.trim().length)) {
             throw new ExtractError(
               `ebeveyn bağlamında kampanya: '${window.trim().slice(0, 80)}'`,
             );

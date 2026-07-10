@@ -5,14 +5,14 @@
       "id": "netflix",
       "regions": {
         "tr": { "url": "https://help.netflix.com/tr/node/24926", "locale": "tr-TR", "expectedCurrency": "TRY", "enabled": false, "_note": "geo-IP: help-center içeriği IP'den seçiliyor, US runner TR fiyatı GÖREMEZ (2026-07-09 koşusunda doğrulandı) — TR proxy/self-hosted runner kararına kadar kapalı", "robotsCheckedAt": "2026-07-09" },
-        "us": { "url": "https://help.netflix.com/en/node/24926", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "body", "pattern": "Standard with ads:?\\s*(\\$[\\d.,]+|[\\d.,]+\\s*USD)" }, "robotsCheckedAt": "2026-07-09", "_note": "TEMEL plan = Standard with ads (katalog semantiği; PR #3'te 'Standard' \\$19.99 yanlış plana kaydı)" }
+        "us": { "url": "https://help.netflix.com/en/node/24926", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "body", "pattern": "Standard with ads:?\\s*(\\$[\\d.,]+|[\\d.,]+\\s*USD)" }, "robotsCheckedAt": "2026-07-09", "_note": "TEMEL plan = Standard with ads (katalog semantiği; PR #3'te 'Standard' \\$19.99 yanlış plana kaydı)", "plans": { "standard-with-ads": { "pattern": "Standard with ads:?\\s*(\\$[\\d.,]+)", "expectedRange": [400, 2500], "_note": "taban aynası" }, "standard": { "pattern": "(?<!with ads)Standard:\\s*(\\$[\\d.,]+)", "expectedRange": [900, 4500] }, "premium": { "pattern": "Premium:\\s*(\\$[\\d.,]+)", "expectedRange": [1200, 6000] } } }
       }
     },
     {
       "id": "spotify",
       "regions": {
-        "tr": { "url": "https://www.spotify.com/tr-tr/premium/", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "main", "pattern": "Bireysel planı\\s*/ay\\s*(₺\\d+(?:,\\d{1,2})?)" }, "robotsCheckedAt": "2026-07-09" },
-        "us": { "url": "https://www.spotify.com/us/premium/", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "main", "pattern": "Individual only\\. \\$0 for 1 month, then (\\$[\\d.,]+) per month" }, "robotsCheckedAt": "2026-07-09" }
+        "tr": { "url": "https://www.spotify.com/tr-tr/premium/", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "main", "pattern": "Bireysel planı\\s*/ay\\s*(₺\\d+(?:,\\d{1,2})?)" }, "robotsCheckedAt": "2026-07-09", "plans": { "bireysel": { "pattern": "Bireysel planını dene[\\s\\S]{0,40}?Sonra yalnızca (₺[\\d.,]+)/ay", "expectedRange": [4000, 40000], "_note": "taban aynası — hero satırı /ay ile sınırlı; kart metni '₺991 Premium hesabı' bitişikliği yüzünden KULLANILMAZ (kalibrasyon testi kanıtı)" }, "ogrenci": { "pattern": "Öğrenci[\\s\\S]{0,80}?Sonra ayda (₺[\\d.,]+)", "expectedRange": [2000, 20000] }, "duo": { "pattern": "Duo[\\s\\S]{0,80}?(₺[\\d.,]+)\\s*/\\s*ay", "expectedRange": [5000, 55000] }, "aile": { "pattern": "Aile[\\s\\S]{0,80}?(₺[\\d.,]+)\\s*/\\s*ay", "expectedRange": [6000, 65000] } } },
+        "us": { "url": "https://www.spotify.com/us/premium/", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "main", "pattern": "Individual only\\. \\$0 for 1 month, then (\\$[\\d.,]+) per month" }, "robotsCheckedAt": "2026-07-09", "plans": { "individual": { "pattern": "Individual only\\. \\$0 for 1 month, then (\\$[\\d.,]+) per month", "expectedRange": [500, 3000], "_note": "taban aynası" } } }
       }
     },
     {
@@ -26,14 +26,14 @@
       "id": "apple-music",
       "regions": {
         "tr": { "url": "https://www.apple.com/tr/apple-music/", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "main", "pattern": "(₺[\\d.,]+|[\\d.,]+\\s*TL)" }, "robotsCheckedAt": "2026-07-09" },
-        "us": { "url": "https://www.apple.com/apple-music/", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "main", "pattern": "(\\$[\\d.,]+)" }, "robotsCheckedAt": "2026-07-09" }
+        "us": { "url": "https://www.apple.com/apple-music/", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "main", "pattern": "(\\$[\\d.,]+)" }, "robotsCheckedAt": "2026-07-09", "plans": { "individual": { "pattern": "Individual\\s*(\\$[\\d.,]+)/month", "expectedRange": [500, 3000], "_note": "taban aynası" }, "family": { "pattern": "Family\\s*(\\$[\\d.,]+)/month", "expectedRange": [800, 4500] }, "student": { "pattern": "Student[\\s\\S]{0,60}?(\\$[\\d.,]+)/month", "expectedRange": [200, 1500] } } }
       }
     },
     {
       "id": "apple-icloud",
       "regions": {
         "tr": { "url": "https://support.apple.com/tr-tr/108047", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "#sections", "pattern": "50\\s*GB\\D*?([\\d.,]+\\s*TL)" }, "robotsCheckedAt": "2026-07-09" },
-        "us": { "url": "https://support.apple.com/en-us/108047", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "#sections", "pattern": "United States[\\s\\S]{0,300}?50\\s*GB[^$]*(\\$\\d+\\.\\d{2})" }, "robotsCheckedAt": "2026-07-09", "_note": "sayfa TÜM ülkelerin fiyatını içerir — ülke çapası + tam 2 ondalık şart ($0.99200 bug'ı)" }
+        "us": { "url": "https://support.apple.com/en-us/108047", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "#sections", "pattern": "United States[\\s\\S]{0,300}?50\\s*GB[^$]*(\\$\\d+\\.\\d{2})" }, "robotsCheckedAt": "2026-07-09", "_note": "sayfa TÜM ülkelerin fiyatını içerir — ülke çapası + tam 2 ondalık şart ($0.99200 bug'ı)", "plans": { "50gb": { "pattern": "United States[\\s\\S]{0,400}?50\\s*GB:?\\s*(\\$\\d+\\.\\d{2})", "expectedRange": [49, 500], "_note": "taban aynası" }, "200gb": { "pattern": "United States[\\s\\S]{0,400}?200\\s*GB:?\\s*(\\$\\d+\\.\\d{2})", "expectedRange": [150, 1500] }, "2tb": { "pattern": "United States[\\s\\S]{0,400}?(?<!1)2\\s*TB:?\\s*(\\$\\d+\\.\\d{2})", "expectedRange": [500, 5000] }, "6tb": { "pattern": "United States[\\s\\S]{0,400}?6\\s*TB:?\\s*(\\$\\d+\\.\\d{2})", "expectedRange": [1500, 15000] }, "12tb": { "pattern": "United States[\\s\\S]{0,400}?12\\s*TB:?\\s*(\\$\\d+\\.\\d{2})", "expectedRange": [3000, 30000] } } }
       }
     },
     {
@@ -46,14 +46,14 @@
     {
       "id": "disney-plus",
       "regions": {
-        "tr": { "url": "https://www.disneyplus.com/tr-tr", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "main", "pattern": "(₺[\\d.,]+|[\\d.,]+\\s*TL)" }, "robotsCheckedAt": "2026-07-09" },
+        "tr": { "url": "https://www.disneyplus.com/tr-tr", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "main", "pattern": "(₺[\\d.,]+|[\\d.,]+\\s*TL)" }, "robotsCheckedAt": "2026-07-09", "plans": { "reklamli": { "pattern": "REKLAMSIZ\\s*([\\d.,]+\\s*TL)\\s*/\\s*ay", "expectedRange": [15000, 60000], "_note": "sayfa sırası: iki etiket sonra iki fiyat — İLK fiyat REKLAMLI (probe 2026-07-10)" }, "reklamsiz": { "pattern": "TL\\s*/\\s*ay\\s*([\\d.,]+\\s*TL)\\s*/\\s*ay", "expectedRange": [25000, 90000], "_note": "iki TL/ay arasındaki İKİNCİ fiyat" } } },
         "us": { "url": "https://www.disneyplus.com/", "locale": "en-US", "expectedCurrency": "USD", "enabled": false, "css": { "selector": "main", "pattern": "(\\$[\\d.,]+)" }, "robotsCheckedAt": "2026-07-09", "_note": "ana sayfadaki TÜM fiyatlar bundle 6-ay promosu (probe 2026-07-09: 'then renews to $12.99/month' yasal metni); kalıcı temel-plan fiyatı statik HTML'de YOK, help makalesi de JS-render — headless kararına kadar kapalı, katalog $11.99 elle doğrulanmış kalır" }
       }
     },
     {
       "id": "hbo-max",
       "regions": {
-        "tr": { "url": "https://www.hbomax.com/tr/tr", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "main", "pattern": "Standart\\s*\\(([\\d.,]+\\s*TL)\\/ay" }, "robotsCheckedAt": "2026-07-09" },
+        "tr": { "url": "https://www.hbomax.com/tr/tr", "locale": "tr-TR", "expectedCurrency": "TRY", "css": { "selector": "main", "pattern": "Standart\\s*\\(([\\d.,]+\\s*TL)\\/ay" }, "robotsCheckedAt": "2026-07-09", "plans": { "standart": { "pattern": "Standart\\s*\\(([\\d.,]+\\s*TL)\\/ay", "expectedRange": [12000, 50000], "_note": "taban aynası" }, "ozel": { "pattern": "Özel\\s*\\(([\\d.,]+\\s*TL)\\/ay", "expectedRange": [18000, 70000], "_note": "Standart sayfa kalıbı varsayımı; kırılırsa plan-izolasyon alert — yanlış veri riski yok" } } },
         "us": { "url": "https://www.hbomax.com/", "locale": "en-US", "expectedCurrency": "USD", "css": { "selector": "main", "pattern": "Basic With Ads - (\\$[\\d.,]+)/month" }, "robotsCheckedAt": "2026-07-09", "_note": "hero'daki 'Starting at $6.58' yıllık-peşin teaser'ı — footer legal metnindeki liste fiyatı hedeflenir" }
       }
     },

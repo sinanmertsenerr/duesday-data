@@ -25,6 +25,9 @@ jobs:
       - run: npm test
       - name: catalog.json şema doğrulaması
         run: node scraper/bin/validate-catalog.js catalog.json
+      # M8b: plan config'i pattern+expectedRange zorunlu ve catalog'la tutarlı.
+      - name: services.config.json plan doğrulaması
+        run: node scraper/bin/validate-config.js scraper/services.config.json catalog.json
       # Bilgi amaçlı, MERGE'İ BLOKLAMAZ: taban fiyat ↔ plan fiyatı ayrışması
       # (scraper tabanı günceller, plans M8b'ye kadar manuel — bayatlama
       # sessiz kalmasın; M8a impact kararı: hard-error değil görünürlük).

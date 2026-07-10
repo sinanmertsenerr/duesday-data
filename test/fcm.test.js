@@ -114,3 +114,42 @@ test('sendAll: 429 bir kez backoff\'la yeniden denenir', async () => {
   assert.equal(sent.length, 1);
   assert.equal(failures.length, 0);
 });
+
+// ---- M8b: plan-bazlı push ----
+
+const planCatalog = {
+  services: [
+    {
+      id: 'netflix',
+      name: 'Netflix',
+      plans: [{ id: 'standart', name: 'Standart', prices: {} }],
+    },
+  ],
+};
+
+test('M8b: planId\'li değişiklik plan topic\'ine gider, payload planId+planName taşır', () => {
+  const [msg] = buildPushMessages(
+    artifact([change({ planId: 'standart' })]),
+    planCatalog,
+  );
+  assert.equal(msg.message.topic, 'svc-netflix-tr-standart');
+  assert.equal(msg.message.data.planId, 'standart');
+  assert.equal(msg.message.data.planName, 'Standart');
+  assert.equal(msg.message.android.collapse_key, 'svc-netflix-tr-standart');
+});
+
+test('M8b: planId\'siz (taban) değişiklikte plan alanları HİÇ yok — eski sözleşme birebir', () => {
+  const [msg] = buildPushMessages(artifact([change()]), planCatalog);
+  assert.equal(msg.message.topic, 'svc-netflix-tr');
+  assert.ok(!('planId' in msg.message.data));
+  assert.ok(!('planName' in msg.message.data));
+});
+
+test('M8b: katalogda adı çözülemeyen plan (silinmiş) mesajı ATLANIR — yanlış push yerine hiç', () => {
+  const msgs = buildPushMessages(
+    artifact([change({ planId: 'silinmis-plan' }), change()]),
+    planCatalog,
+  );
+  assert.equal(msgs.length, 1);
+  assert.equal(msgs[0].message.topic, 'svc-netflix-tr');
+});

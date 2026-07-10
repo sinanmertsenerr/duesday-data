@@ -4,7 +4,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 
-import { validateCatalog, validateHistory } from '../scraper/lib/validate.js';
+import { validateCatalog, validateHistory, validateServicesConfig } from '../scraper/lib/validate.js';
 
 const repoDir = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -190,4 +190,49 @@ test('plans: prices base ile AYNI kurallara tabi (kur/int/aralık)', () => {
       withPlan({ ...validPlan(), prices: { xx: { minorUnits: 100, currency: 'TRY' } } }),
     ).some((e) => e.includes("bilinmeyen bölge 'xx'")),
   );
+});
+
+// ---- M8b: planSeries + config validasyonu ----
+
+test('history: planSeries geçerli/geçersiz şema (taban kurallarıyla simetrik)', () => {
+  const h = {
+    schemaVersion: 1,
+    generatedAt: '2026-07-10',
+    series: { netflix: { tr: [{ date: '2026-07-10', minorUnits: 18999, currency: 'TRY' }] } },
+    planSeries: {
+      netflix: { standart: { tr: [{ date: '2026-07-10', minorUnits: 28999, currency: 'TRY' }] } },
+    },
+  };
+  assert.deepEqual(validateHistory(h), []);
+  // planSeries hiç yoksa da geçerli (eski dosya şekli — additive)
+  const { planSeries, ...old } = h;
+  assert.deepEqual(validateHistory(old), []);
+  // bozuk kur planSeries'te de yakalanır
+  h.planSeries.netflix.standart.tr[0].currency = 'USD';
+  assert.ok(validateHistory(h).some((e) => e.includes('netflix#standart')));
+});
+
+test('config: plan pattern\'i olan girdide expectedRange ZORUNLU; catalog dışı plan hata; custom rezerve', () => {
+  const catalog = {
+    services: [{ id: 'netflix', plans: [{ id: 'standart', name: 'S' }] }],
+  };
+  const cfgOk = {
+    services: [{ id: 'netflix', regions: { tr: { plans: { standart: { pattern: 'x(1)', expectedRange: [1, 2] } } } } }],
+  };
+  assert.deepEqual(validateServicesConfig(cfgOk, catalog), []);
+  const noRange = structuredClone(cfgOk);
+  delete noRange.services[0].regions.tr.plans.standart.expectedRange;
+  assert.ok(validateServicesConfig(noRange, catalog).some((e) => e.includes('expectedRange')));
+  const unknownPlan = structuredClone(cfgOk);
+  unknownPlan.services[0].regions.tr.plans.hayalet = { pattern: 'x', expectedRange: [1, 2] };
+  assert.ok(validateServicesConfig(unknownPlan, catalog).some((e) => e.includes('tanımlı değil')));
+  const customPlan = structuredClone(cfgOk);
+  customPlan.services[0].regions.tr.plans.custom = { pattern: 'x', expectedRange: [1, 2] };
+  assert.ok(validateServicesConfig(customPlan, catalog).some((e) => e.includes('REZERVE')));
+});
+
+test('config: repodaki gerçek services.config.json + catalog.json tutarlı', () => {
+  const cfg = JSON.parse(readFileSync(join(repoDir, 'scraper', 'services.config.json'), 'utf8'));
+  const cat = JSON.parse(readFileSync(join(repoDir, 'catalog.json'), 'utf8'));
+  assert.deepEqual(validateServicesConfig(cfg, cat), []);
 });

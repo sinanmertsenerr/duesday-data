@@ -6,9 +6,12 @@
 // oradaki supportedVersion ile birebir aynı olmalı). Topic adı da app'in
 // PushTopics.desired üretimiyle kilitli: `svc-{id}-{region}`.
 //
-// M8 notu (SPEC): plan-bazlı topic'ler eklendiğinde gönderici hem taban
-// topic'e hem plan topic'ine YAYINLAMALI — eski app sürümleri aylarca
-// taban topic'te yaşar.
+// M8b: planId'li değişiklik → topic `svc-{id}-{region}-{planId}`;
+// planId'siz (taban) → taban topic. SPEC geçiş kuralı (taban yayını
+// sürer) ayna-pattern'lerle kendiliğinden sağlanır: taban zammı hem
+// taban kaydını (svc.prices diff) hem taban-aynası planın kaydını
+// üretir → iki topic'e iki ayrı mesaj. planName SUNUCUDA çözülür —
+// app'in bg-isolate'i katalog açamaz (bilinen sınır, M6).
 
 import { createSign } from 'node:crypto';
 
@@ -20,6 +23,13 @@ export function buildPushMessages(artifact, catalog) {
   const names = new Map(
     (catalog?.services ?? []).map((s) => [s.id, s.name ?? s.id]),
   );
+  // planName haritası: "id:planId" → marka plan adı (names ile simetrik).
+  const planNames = new Map();
+  for (const s of catalog?.services ?? []) {
+    for (const p of s.plans ?? []) {
+      if (p?.id && p?.name) planNames.set(`${s.id}:${p.id}`, p.name);
+    }
+  }
   const messages = [];
   for (const c of artifact.changes ?? []) {
     // !oldMinorUnits: 0/null/undefined — diff.js doğal akışta old=0
@@ -28,11 +38,22 @@ export function buildPushMessages(artifact, catalog) {
     if (!c?.id || !c?.region || !c.oldMinorUnits || c.oldMinorUnits === c.newMinorUnits) {
       continue;
     }
-    const topic = `svc-${c.id}-${c.region}`;
+    // planId'li kayıt: katalogda adı çözülemiyorsa (silinmiş plan —
+    // yarış durumu) mesaj ATLANIR: yanlış topic'e/adsız push yerine hiç
+    // push (app tarafı zaten taban topic'ten haberdar olur).
+    let planName;
+    if (c.planId) {
+      planName = planNames.get(`${c.id}:${c.planId}`);
+      if (!planName) continue;
+    }
+    const topic = c.planId
+      ? `svc-${c.id}-${c.region}-${c.planId}`
+      : `svc-${c.id}-${c.region}`;
     messages.push({
       message: {
         topic,
-        // FCM data değerleri STRING olmak zorunda.
+        // FCM data değerleri STRING olmak zorunda; olmayan alan HİÇ
+        // konmaz (eski app "alan yok = taban değişikliği" okur).
         data: {
           v: String(PAYLOAD_VERSION),
           id: String(c.id),
@@ -41,6 +62,7 @@ export function buildPushMessages(artifact, catalog) {
           oldMinorUnits: String(c.oldMinorUnits),
           newMinorUnits: String(c.newMinorUnits),
           currency: String(c.currency),
+          ...(c.planId ? { planId: String(c.planId), planName: String(planName) } : {}),
         },
         android: {
           // Aynı servisin ardışık push'ları cihazda tek bildirime iner

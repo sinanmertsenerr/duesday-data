@@ -65,6 +65,41 @@ export async function runScrape(catalog, config, fetcher, { staggerMs = 0 } = {}
           currency: rc.expectedCurrency,
           sourceUrl: rc.url,
         });
+        // M8b: plan fiyatları — AYNI sayfadan, plan-başına AYRI try/catch
+        // (plan-seviyesi izolasyon: kırık plan tabanı ve diğer planları
+        // düşürmez). Çapraz sanity: plan, tabanın 0.2x–20x aralığında
+        // olmalı (yanlış kart okuması bariyeri — storytel PR#3 sınıfı).
+        for (const [planId, pc] of Object.entries(rc.plans ?? {})) {
+          try {
+            const planMinor = extractPrice(html, buildPlanRegionConfig(rc, pc));
+            const [pmin, pmax] = pc.expectedRange; // validate-config zorunlu kılar
+            if (planMinor < pmin || planMinor > pmax) {
+              throw new Error(
+                `beklenen aralık dışı: ${planMinor} ∉ [${pmin}, ${pmax}]`,
+              );
+            }
+            if (planMinor < minorUnits * 0.2 || planMinor > minorUnits * 20) {
+              throw new Error(
+                `çapraz sanity: plan ${planMinor} vs taban ${minorUnits} (0.2x–20x dışı)`,
+              );
+            }
+            scraped.push({
+              id: service.id,
+              region,
+              planId,
+              minorUnits: planMinor,
+              currency: rc.expectedCurrency,
+              sourceUrl: rc.url,
+            });
+          } catch (e) {
+            failures.push({
+              id: service.id,
+              region,
+              plan: planId,
+              error: String(e?.message ?? e),
+            });
+          }
+        }
       } catch (e) {
         // Servis-bazlı izolasyon: hata diff'e ASLA girmez, rapora girer.
         failures.push({ id: service.id, region, error: String(e?.message ?? e) });
@@ -73,6 +108,18 @@ export async function runScrape(catalog, config, fetcher, { staggerMs = 0 } = {}
     }
   }
   return { scraped, failures, attempted };
+}
+
+/** Plan alt-config'ini bölge config'iyle birleştirir (extractPrice girdisi).
+ *  Selector verilmezse tabanın selector'ı; jsonLd varsayılan KAPALI
+ *  (plan ayrımı metin bazlı — JSON-LD offer eşlemesi plan adı taşımaz). */
+export function buildPlanRegionConfig(rc, pc) {
+  return {
+    locale: rc.locale,
+    expectedCurrency: rc.expectedCurrency,
+    jsonLd: pc.jsonLd ?? false,
+    css: { selector: pc.selector ?? rc.css?.selector ?? 'body', pattern: pc.pattern },
+  };
 }
 
 function writeOutput(name, value) {
