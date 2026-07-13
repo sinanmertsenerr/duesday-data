@@ -74,6 +74,7 @@ export function validateCatalog(catalog) {
       errors.push(`${where}: brandColor #RRGGBB değil`);
     }
     validatePlans(where, svc.plans, errors);
+    validateChannelPrices(where, svc.channelPrices, errors); // M8c servis seviyesi
     if (svc.prices === undefined) return; // prices opsiyonel (app toleranslı)
     if (svc.prices === null || typeof svc.prices !== 'object' || Array.isArray(svc.prices)) {
       errors.push(`${where}: prices obje değil`);
@@ -151,15 +152,52 @@ function validatePlans(where, plans, errors) {
     if (typeof plan.name !== 'string' || plan.name.trim() === '') {
       errors.push(`${pwhere}: name zorunlu non-empty string`);
     }
+    const hasChannels = plan.channelPrices !== undefined &&
+        plan.channelPrices !== null &&
+        Object.keys(plan.channelPrices ?? {}).length > 0;
     if (plan.prices === undefined || plan.prices === null ||
         typeof plan.prices !== 'object' || Array.isArray(plan.prices) ||
         Object.keys(plan.prices).length === 0) {
-      // App parser'ı fiyatsız planı atıyor (anlamsız) — burada isimli hata.
-      errors.push(`${pwhere}: prices boş/eksik (fiyatsız plan atılır)`);
+      // App parser'ı fiyatsız planı atıyor (anlamsız) — burada isimli
+      // hata. M8c: yalnız kanal fiyatlı plan da geçerli.
+      if (!hasChannels) {
+        errors.push(`${pwhere}: prices boş/eksik (fiyatsız plan atılır)`);
+      }
     } else {
       validatePrices(pwhere, plan.prices, errors);
     }
+    validateChannelPrices(pwhere, plan.channelPrices, errors);
   });
+}
+
+// channelPrices (M8c — additive): 'apple'|'google' → bölge → fiyat.
+// 'web' REZERVE (web = prices alanı); bilinmeyen kanal isimli hata —
+// app parser'ı sessizce atar, CI burada yakalar (validate ilkesi).
+const KNOWN_CHANNELS = new Set(['apple', 'google']);
+function validateChannelPrices(where, channelPrices, errors) {
+  if (channelPrices === undefined) return;
+  if (channelPrices === null || typeof channelPrices !== 'object' ||
+      Array.isArray(channelPrices)) {
+    errors.push(`${where}: channelPrices obje değil`);
+    return;
+  }
+  for (const [channel, prices] of Object.entries(channelPrices)) {
+    const cwhere = `${where}.channelPrices.${channel}`;
+    if (channel === 'web') {
+      errors.push(`${cwhere}: 'web' REZERVE — web fiyatı prices alanında`);
+      continue;
+    }
+    if (!KNOWN_CHANNELS.has(channel)) {
+      errors.push(`${cwhere}: bilinmeyen kanal (app sessizce atar)`);
+      continue;
+    }
+    if (prices === null || typeof prices !== 'object' ||
+        Array.isArray(prices) || Object.keys(prices).length === 0) {
+      errors.push(`${cwhere}: bölge fiyat haritası boş/geçersiz`);
+      continue;
+    }
+    validatePrices(cwhere, prices, errors);
+  }
 }
 
 /** services.config.json plan config'leri (M8b): pattern + expectedRange

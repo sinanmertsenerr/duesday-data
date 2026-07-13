@@ -38,6 +38,12 @@ export function buildPushMessages(artifact, catalog) {
     if (!c?.id || !c?.region || !c.oldMinorUnits || c.oldMinorUnits === c.newMinorUnits) {
       continue;
     }
+    // M8c v1 kararı: KANAL-only fiyat değişimi push ÜRETMEZ (kanal
+    // topic'i yok; plan topic'ine basmak yanlış hedef kitle olur —
+    // web kullanıcısına App Store zammı bildirilirdi). Guard, ileride
+    // scraper kanal değişimi yazmaya başlarsa yanlışlıkla genişlemeyi
+    // engeller (edge-cases Major #4).
+    if (c.channel) continue;
     // planId'li kayıt: katalogda adı çözülemiyorsa (silinmiş plan —
     // yarış durumu) mesaj ATLANIR: yanlış topic'e/adsız push yerine hiç
     // push (app tarafı zaten taban topic'ten haberdar olur).

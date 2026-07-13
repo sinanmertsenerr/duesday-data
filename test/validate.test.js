@@ -236,3 +236,48 @@ test('config: repodaki gerçek services.config.json + catalog.json tutarlı', ()
   const cat = JSON.parse(readFileSync(join(repoDir, 'catalog.json'), 'utf8'));
   assert.deepEqual(validateServicesConfig(cfg, cat), []);
 });
+
+// ---- M8c: channelPrices kuralları ----
+
+test('channelPrices: geçerli apple kanalı hatasız', () => {
+  const c = base();
+  c.services[0].plans = [{
+    id: 'pro', name: 'Pro',
+    prices: { tr: { minorUnits: 100, currency: 'TRY' } },
+    channelPrices: { apple: { tr: { minorUnits: 120, currency: 'TRY' } } },
+  }];
+  assert.deepEqual(validateCatalog(c), []);
+});
+
+test("channelPrices: 'web' REZERVE ve bilinmeyen kanal isimli hata", () => {
+  const c = base();
+  c.services[0].plans = [{
+    id: 'pro', name: 'Pro',
+    prices: { tr: { minorUnits: 100, currency: 'TRY' } },
+    channelPrices: {
+      web: { tr: { minorUnits: 100, currency: 'TRY' } },
+      amazon: { tr: { minorUnits: 100, currency: 'TRY' } },
+    },
+  }];
+  const errors = validateCatalog(c);
+  assert.equal(errors.filter((e) => e.includes("REZERVE")).length, 1);
+  assert.equal(errors.filter((e) => e.includes('bilinmeyen kanal')).length, 1);
+});
+
+test('channelPrices: yalnız-kanallı plan geçerli (prices boş olabilir)', () => {
+  const c = base();
+  c.services[0].plans = [{
+    id: 'iap-only', name: 'IAP Only',
+    channelPrices: { google: { tr: { minorUnits: 500, currency: 'TRY' } } },
+  }];
+  assert.deepEqual(validateCatalog(c), []);
+});
+
+test('channelPrices: yanlış kur bölge kuralına takılır (REGION_CURRENCY)', () => {
+  const c = base();
+  c.services[0].channelPrices = {
+    apple: { tr: { minorUnits: 100, currency: 'USD' } },
+  };
+  const errors = validateCatalog(c);
+  assert.ok(errors.length > 0);
+});

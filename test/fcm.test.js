@@ -153,3 +153,30 @@ test('M8b: katalogda adı çözülemeyen plan (silinmiş) mesajı ATLANIR — ya
   assert.equal(msgs.length, 1);
   assert.equal(msgs[0].message.topic, 'svc-netflix-tr');
 });
+
+// M8c: kanal-only değişim push üretmez (v1 kararı — kanal topic'i yok,
+// plan topic'ine basmak yanlış kitle olur).
+test('channel alanlı değişiklik push mesajı ÜRETMEZ (M8c guard)', () => {
+  const artifact = {
+    schemaVersion: 1,
+    changes: [
+      {
+        id: 'claude', region: 'tr', planId: 'max-20x', channel: 'apple',
+        oldMinorUnits: 999999, newMinorUnits: 1299999, currency: 'TRY',
+      },
+      {
+        id: 'claude', region: 'tr', planId: 'pro',
+        oldMinorUnits: 79999, newMinorUnits: 99999, currency: 'TRY',
+      },
+    ],
+  };
+  const catalog = {
+    services: [{
+      id: 'claude', name: 'Claude',
+      plans: [{ id: 'pro', name: 'Pro' }, { id: 'max-20x', name: 'Max 20x' }],
+    }],
+  };
+  const messages = buildPushMessages(artifact, catalog);
+  assert.equal(messages.length, 1); // yalnız kanalsız plan değişimi
+  assert.equal(messages[0].message.topic, 'svc-claude-tr-pro');
+});
