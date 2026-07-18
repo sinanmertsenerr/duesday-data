@@ -1,5 +1,49 @@
 {
   "schemaVersion": 1,
-  "changedAt": null,
-  "changes": []
+  "changedAt": "2026-07-18",
+  "changes": [
+    {
+      "id": "apple-music",
+      "region": "tr",
+      "oldMinorUnits": 5999,
+      "newMinorUnits": 8999,
+      "currency": "TRY",
+      "sourceUrl": "https://www.apple.com/tr/apple-music/"
+    },
+    {
+      "id": "apple-music",
+      "region": "us",
+      "oldMinorUnits": 1099,
+      "newMinorUnits": 1199,
+      "currency": "USD",
+      "sourceUrl": "https://www.apple.com/apple-music/"
+    },
+    {
+      "id": "apple-music",
+      "region": "us",
+      "planId": "individual",
+      "oldMinorUnits": 1099,
+      "newMinorUnits": 1199,
+      "currency": "USD",
+      "sourceUrl": "https://www.apple.com/apple-music/"
+    },
+    {
+      "id": "apple-music",
+      "region": "us",
+      "planId": "family",
+      "oldMinorUnits": 1699,
+      "newMinorUnits": 1999,
+      "currency": "USD",
+      "sourceUrl": "https://www.apple.com/apple-music/"
+    },
+    {
+      "id": "apple-music",
+      "region": "us",
+      "planId": "student",
+      "oldMinorUnits": 599,
+      "newMinorUnits": 699,
+      "currency": "USD",
+      "sourceUrl": "https://www.apple.com/apple-music/"
+    }
+  ]
 }
