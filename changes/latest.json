@@ -1,49 +1,14 @@
 {
   "schemaVersion": 1,
-  "changedAt": "2026-07-18",
+  "changedAt": "2026-09-09",
   "changes": [
     {
-      "id": "apple-music",
+      "id": "apple-icloud",
       "region": "tr",
-      "oldMinorUnits": 5999,
-      "newMinorUnits": 8999,
+      "oldMinorUnits": 3999,
+      "newMinorUnits": 4999,
       "currency": "TRY",
-      "sourceUrl": "https://www.apple.com/tr/apple-music/"
-    },
-    {
-      "id": "apple-music",
-      "region": "us",
-      "oldMinorUnits": 1099,
-      "newMinorUnits": 1199,
-      "currency": "USD",
-      "sourceUrl": "https://www.apple.com/apple-music/"
-    },
-    {
-      "id": "apple-music",
-      "region": "us",
-      "planId": "individual",
-      "oldMinorUnits": 1099,
-      "newMinorUnits": 1199,
-      "currency": "USD",
-      "sourceUrl": "https://www.apple.com/apple-music/"
-    },
-    {
-      "id": "apple-music",
-      "region": "us",
-      "planId": "family",
-      "oldMinorUnits": 1699,
-      "newMinorUnits": 1999,
-      "currency": "USD",
-      "sourceUrl": "https://www.apple.com/apple-music/"
-    },
-    {
-      "id": "apple-music",
-      "region": "us",
-      "planId": "student",
-      "oldMinorUnits": 599,
-      "newMinorUnits": 699,
-      "currency": "USD",
-      "sourceUrl": "https://www.apple.com/apple-music/"
+      "sourceUrl": "https://support.apple.com/tr-tr/108047"
     }
   ]
 }
