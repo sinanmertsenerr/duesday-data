@@ -1,14 +1,50 @@
 {
   "schemaVersion": 1,
-  "changedAt": "2026-09-09",
+  "changedAt": "2026-10-01",
   "changes": [
     {
-      "id": "apple-icloud",
+      "id": "spotify",
       "region": "tr",
-      "oldMinorUnits": 3999,
-      "newMinorUnits": 4999,
+      "oldMinorUnits": 9900,
+      "newMinorUnits": 11500,
       "currency": "TRY",
-      "sourceUrl": "https://support.apple.com/tr-tr/108047"
+      "sourceUrl": "https://www.spotify.com/tr-tr/premium/"
+    },
+    {
+      "id": "spotify",
+      "region": "tr",
+      "planId": "bireysel",
+      "oldMinorUnits": 9900,
+      "newMinorUnits": 11500,
+      "currency": "TRY",
+      "sourceUrl": "https://www.spotify.com/tr-tr/premium/"
+    },
+    {
+      "id": "spotify",
+      "region": "tr",
+      "planId": "ogrenci",
+      "oldMinorUnits": 5500,
+      "newMinorUnits": 6000,
+      "currency": "TRY",
+      "sourceUrl": "https://www.spotify.com/tr-tr/premium/"
+    },
+    {
+      "id": "spotify",
+      "region": "tr",
+      "planId": "duo",
+      "oldMinorUnits": 13500,
+      "newMinorUnits": 15900,
+      "currency": "TRY",
+      "sourceUrl": "https://www.spotify.com/tr-tr/premium/"
+    },
+    {
+      "id": "spotify",
+      "region": "tr",
+      "planId": "aile",
+      "oldMinorUnits": 16500,
+      "newMinorUnits": 19900,
+      "currency": "TRY",
+      "sourceUrl": "https://www.spotify.com/tr-tr/premium/"
     }
   ]
 }
